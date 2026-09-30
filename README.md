@@ -26,7 +26,7 @@ Live multiplayer needs a free Firebase project (Spark plan, no credit card requi
 
 Students scan this code in class — it opens the game and auto-fills the Firebase config, then they just type in the room code shown on the big screen.
 
-< img src="algoarena-invite-qr-neu.png" width="420" alt="AlgoArena classroom invite QR code">
+<img src="algoarena-invite-qr-neu.png" width="420" alt="AlgoArena classroom invite QR code">
 
 ## Custom question banks
 
