@@ -366,9 +366,10 @@ textarea#import-json:focus{border-color:var(--purple);}
         <div class="hint" style="margin:10px 0; line-height:1.7;">
           1. Go to console.firebase.google.com, sign in with your Google account, and click Add project (you can skip Analytics).<br>
           2. Left sidebar: Build &gt; Realtime Database &gt; Create Database &gt; start in <b>locked mode</b> &gt; choose us-central1 &gt; Enable.<br>
-          3. On the Realtime Database page, open the <b>Rules</b> tab, paste the rules below, and click <b>Publish</b>.<br>
-          4. Gear icon (top left) &gt; Project settings &gt; Your apps &gt; click the Web icon(&lt;/&gt;) &gt; Register app, then copy the <b>firebaseConfig</b> JSON.<br>
-          5. Paste it below and click Save. This device will remember it.
+          3. Left sidebar: Build &gt; Authentication &gt; Get started &gt; Sign-in method &gt; <b>Anonymous</b> &gt; Enable &gt; Save.<br>
+          4. On the Realtime Database page, open the <b>Rules</b> tab, paste the rules below, and click <b>Publish</b>.<br>
+          5. Gear icon (top left) &gt; Project settings &gt; Your apps &gt; click the Web icon(&lt;/&gt;) &gt; Register app, then copy the <b>firebaseConfig</b> JSON.<br>
+          6. Paste it below and click Save. This device will remember it.
         </div>
         <!-- Read-only database rules, filled in by Script 2. -->
         <div class="field">
@@ -1316,18 +1317,50 @@ document.addEventListener("DOMContentLoaded", init);
  *   buzz     Buzz entries; the first one the host receives wins
  *   answers  The buzzing player's answer
  *   reveal   The revealed result for the current question
- * The host computes and writes all scores; players only display and submit.
+ * Every device signs in anonymously. The database rules use that id so only
+ * the host can run the game and change scores, and each player can write
+ * only their own name, buzz, and answer.
  */
 
 // localStorage key for the saved Firebase config.
 const FB_KEY = "clrs-battle-fb";
-// Firebase compat SDK, loaded on demand.
+// Firebase compat SDK (app, database, anonymous auth), loaded on demand.
 const FB_CDN = [
   "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js",
-  "https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"
+  "https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js",
+  "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"
 ];
-// Database rules for the user to paste into the Firebase console.
-const FB_RULES = "{\n  \"rules\": {\n    \"rooms\": {\n      \"$code\": {\n        \".read\": true,\n        \".write\": true\n      }\n    }\n  }\n}";
+/**
+ * Database rules for the user to paste into the Firebase console.
+ * Signed-in users can read a room. Only the host can change the room and
+ * scores. Players can write only their own record, buzz, and a single answer.
+ * @const {string}
+ */
+const FB_RULES = JSON.stringify({
+  rules: {
+    rooms: {
+      "$code": {
+        ".read": "auth != null",
+        // The host owns the room; a new room must name its creator as host.
+        ".write": "auth != null && (data.child('meta/hostUid').val() === auth.uid || (!data.exists() && newData.child('meta/hostUid').val() === auth.uid))",
+        players: {
+          "$pid": {
+            ".write": "auth != null && $pid === auth.uid",
+            name: { ".validate": "newData.isString() && newData.val().length <= 16" },
+            // Players may only start at 0; after that only the host changes scores.
+            score: { ".validate": "newData.isNumber() && (root.child('rooms/' + $code + '/meta/hostUid').val() === auth.uid || (!data.exists() && newData.val() === 0) || newData.val() === data.val())" }
+          }
+        },
+        buzz: {
+          "$id": { ".write": "auth != null && !data.exists() && newData.child('pid').val() === auth.uid" }
+        },
+        answers: {
+          "$pid": { ".write": "auth != null && $pid === auth.uid && !data.exists()" }
+        }
+      }
+    }
+  }
+}, null, 2);
 // Room code alphabet without the easily confused I, L, O, 0, and 1.
 const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 // Answer time limit after buzzing, in milliseconds.
@@ -1385,7 +1418,8 @@ function ts(){
     ? firebase.database.ServerValue.TIMESTAMP : Date.now();
 }
 /**
- * Ensures Firebase is initialized and returns the database. Throws "no-config" without a valid config.
+ * Ensures Firebase is initialized and signed in, then returns the database.
+ * Throws "no-config" without a valid config.
  * @return {!Promise<!Object>}
  */
 async function ensureFb(){
@@ -1397,11 +1431,28 @@ async function ensureFb(){
     fbLoading = (async function(){
       for(const src of FB_CDN) await loadScript(src);
       if(!(firebase.apps && firebase.apps.length)) firebase.initializeApp(cfg);
+      // The database rules need a signed-in user; anonymous sign-in needs no account.
+      await firebase.auth().signInAnonymously();
       fbDb = firebase.database();
       return fbDb;
-    })();
+    })().catch(function(e){ fbLoading = null; throw e; });  // Let the next click try again.
   }
   return fbLoading;
+}
+/**
+ * Returns this device's anonymous user id, which the database rules check.
+ * @return {string}
+ */
+function myUid(){ return firebase.auth().currentUser.uid; }
+/**
+ * Picks the message to show when Firebase cannot be used.
+ * @param {!Error} e Error thrown by ensureFb().
+ * @param {string} noConfigMsg Message to show when no config is saved.
+ * @return {string}
+ */
+function fbErrorMsg(e, noConfigMsg){
+  return e.message === "no-config" ? noConfigMsg
+    : "Could not connect to Firebase. Check that this device is online and Anonymous sign-in is enabled (setup step 3).";
 }
 // References to the current room root and to a child path inside it.
 function roomRef(){ return fbDb.ref("rooms/" + L.code); }
@@ -1464,12 +1515,12 @@ function ansButtonsHtml(opts){
 }
 
 /* ---------- HOST ---------- */
-/** Opens a room: finds an unused code (up to 20 tries), writes initial data, and listens for players. */
+/** Opens a room: finds an unused code (up to 20 tries), writes initial data with this device as host, and listens for players. */
 async function hostLive(){
   liveMsg("");
   var db;
   try{ db = await ensureFb(); }
-  catch(e){ liveMsg("Please finish the Firebase setup below first."); return; }
+  catch(e){ liveMsg(fbErrorMsg(e, "Please finish the Firebase setup below first.")); return; }
   var questions = buildLiveQuestions();
   if(!questions.length){ liveMsg("No questions match the current setup. Select at least one module."); return; }
   var code = null;
@@ -1482,7 +1533,8 @@ async function hostLive(){
   Object.assign(L, { role:"host", code:code, pid:null, name:"", questions:questions, idx:0,
     streaks:{}, phase:"lobby", q:null, scoreCache:{}, buzzPid:null, buzzName:"" });
   liveCleanup();
-  await db.ref("rooms/" + code).set({ meta:{ state:"lobby", totalQ: questions.length, createdAt: ts() } });
+  // hostUid marks this device as the room owner for the database rules.
+  await db.ref("rooms/" + code).set({ meta:{ state:"lobby", totalQ: questions.length, createdAt: ts(), hostUid: myUid() } });
   show("screen-live");
   renderHostLobby();
   liveOn(lr("players"), "value", function(s){
@@ -1733,8 +1785,9 @@ async function cancelLive(){ await closeLiveRoom(); }
 
 /* ---------- PLAYER ---------- */
 /**
- * Joins a room: validates the code and room state, registers the player
- * (removed automatically on disconnect), then listens to meta, q, and reveal.
+ * Joins a room: validates the code and room state, registers the player under
+ * their uid (removed automatically on disconnect), then listens to meta, q,
+ * and reveal.
  */
 async function joinLive(){
   liveMsg("");
@@ -1743,14 +1796,15 @@ async function joinLive(){
   if(!code){ liveMsg("Enter the room code shown on the host screen."); return; }
   var db;
   try{ db = await ensureFb(); }
-  catch(e){ liveMsg("This device needs the Firebase config too (see setup below)."); return; }
+  catch(e){ liveMsg(fbErrorMsg(e, "This device needs the Firebase config too (see setup below).")); return; }
   var meta = await db.ref("rooms/" + code + "/meta").once("value");
   if(!meta.exists()){ liveMsg("Room not found. Check the code."); return; }
   if((meta.val() || {}).state !== "lobby"){ liveMsg("That game already started."); return; }
   Object.assign(L, { role:"player", code:code, name:name, phase:"lobby", q:null,
     pMeta: meta.val() || {}, iBuzzed:false, iAnswered:false, buzzPid:null });
   liveCleanup();
-  L.pid = db.ref("rooms/" + code + "/players").push().key;
+  // The player id is the auth uid, so the rules can match it.
+  L.pid = myUid();
   await lr("players/" + L.pid).set({ name:name, score:0, joinedAt: ts() });
   lr("players/" + L.pid).onDisconnect().remove();
   show("screen-live");
