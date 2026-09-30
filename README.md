@@ -20,7 +20,7 @@ AlgoArena — an open-sourced Kahoot-style classroom quiz game for CS 5800 Algor
 
 **Play it live: https://yikangliu823.github.io/algoarena/** — no installation, no build, no server. It also runs by opening `index.html` in any modern browser.
 
-Live multiplayer needs a free Firebase project (Spark plan, no credit card required) — the step-by-step setup is in the game's setup panel. The host then shares an invite link or reads out the room code; students join from their phones.
+Live multiplayer needs a free Firebase project (Spark plan, no credit card required) — the step-by-step setup is in the game's setup panel. The host then shares an invite link or reads out the room code; students join from their portable devices.
 
 ## Classroom invite QR
 
