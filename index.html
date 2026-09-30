@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AlgoArena — CS 5800 Quiz Battle</title>
+<style>
+:root{
+  --red:#e21b3c; --blue:#1368ce; --amber:#d89e00; --green:#26890c;
+  --purple:#46178f; --purple-deep:#3a0f78; --ink:#1d1d1f;
+  --card:#ffffff; --muted:#6b6b70;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:linear-gradient(135deg,#46178f 0%,#3a0f78 100%);
+  min-height:100vh; color:var(--ink);
+  display:flex; justify-content:center; align-items:flex-start;
+  padding:24px 16px 48px;
+}
+#app{width:100%; max-width:860px;}
+.screen{display:none;}
+.screen.active{display:block; animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
+.card{
+  background:var(--card); border-radius:16px; padding:28px;
+  box-shadow:0 12px 32px rgba(0,0,0,.25); margin-bottom:16px;
+}
+h1.title{color:#fff; text-align:center; font-size:clamp(34px,6vw,52px); font-weight:800; letter-spacing:1px;}
+p.subtitle{color:rgba(255,255,255,.85); text-align:center; margin:6px 0 22px; font-size:17px;}
+h2.sec{font-size:15px; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); margin:20px 0 10px;}
+h2.sec:first-child{margin-top:0;}
+/* mode cards */
+.mode-row{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+.mode-card{
+  border:3px solid #e4e4e8; border-radius:14px; padding:18px 14px; text-align:center;
+  cursor:pointer; transition:border-color .15s, transform .1s; background:#fafafa;
+}
+.mode-card:hover{transform:translateY(-2px);}
+.mode-card.selected{border-color:var(--purple); background:#f4eefc;}
+.mode-card .m-name{font-size:19px; font-weight:800; color:var(--ink);}
+.mode-card .m-desc{font-size:13px; color:var(--muted); margin-top:4px;}
+/* option pills */
+.pill-row{display:flex; flex-wrap:wrap; gap:10px;}
+.pill{
+  border:2px solid #e4e4e8; background:#fafafa; border-radius:999px;
+  padding:9px 18px; font-size:15px; font-weight:700; cursor:pointer; color:var(--ink);
+  transition:border-color .15s, background .15s;
+}
+.pill.selected{border-color:var(--purple); background:var(--purple); color:#fff;}
+.pill input{display:none;}
+/* module checkboxes */
+.mod-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.mod{
+  display:flex; align-items:flex-start; gap:10px; border:2px solid #e4e4e8; background:#fafafa;
+  border-radius:12px; padding:12px 14px; cursor:pointer; font-size:14px;
+}
+.mod.selected{border-color:var(--purple); background:#f4eefc;}
+.mod input{margin-top:3px; width:17px; height:17px; accent-color:var(--purple);}
+.mod .mod-name{font-weight:800;}
+.mod .mod-meta{color:var(--muted); font-size:12.5px; margin-top:2px;}
+/* text inputs */
+.name-row{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+.field label{display:block; font-size:13px; font-weight:700; color:var(--muted); margin-bottom:6px;}
+.field input[type=text]{
+  width:100%; border:2px solid #e4e4e8; border-radius:10px; padding:11px 14px;
+  font-size:16px; outline:none;
+}
+.field input[type=text]:focus{border-color:var(--purple);}
+/* start button */
+.btn-start{
+  display:block; width:100%; margin-top:24px; border:none; cursor:pointer;
+  background:var(--green); color:#fff; font-size:20px; font-weight:800;
+  padding:16px; border-radius:14px; box-shadow:0 6px 0 rgba(0,0,0,.22);
+  transition:transform .08s, box-shadow .08s;
+}
+.btn-start:active{transform:translateY(4px); box-shadow:0 2px 0 rgba(0,0,0,.22);}
+.btn-start:disabled{background:#b9b9c0; cursor:not-allowed; box-shadow:none;}
+.btn-ghost{
+  border:2px solid #e4e4e8; background:#fff; border-radius:10px; padding:10px 20px;
+  font-size:15px; font-weight:700; cursor:pointer; color:var(--ink);
+}
+/* game top bar */
+.topbar{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;}
+.topbar .pillbox{
+  background:rgba(255,255,255,.16); color:#fff; font-weight:800; font-size:15px;
+  border-radius:999px; padding:8px 18px; white-space:nowrap;
+}
+.topbar .pillbox.score{background:#fff; color:var(--purple);}
+.btn-quit{
+  background:rgba(255,255,255,.16); color:#fff; border:none; border-radius:10px;
+  font-size:15px; font-weight:800; padding:8px 14px; cursor:pointer;
+}
+.btn-quit:hover{background:rgba(226,27,60,.85);}
+/* timer */
+.timer-track{height:10px; background:rgba(255,255,255,.2); border-radius:999px; overflow:hidden; margin-bottom:14px;}
+.timer-fill{height:100%; background:#fff; border-radius:999px; width:100%; transition:width .1s linear;}
+.timer-fill.low{background:var(--red);}
+/* question card */
+.q-label{font-size:13px; font-weight:700; color:var(--muted); letter-spacing:1px; text-transform:uppercase;}
+.q-row{display:flex; align-items:flex-start; gap:14px; margin:8px 0 4px;}
+.q-text{font-size:clamp(22px,3.4vw,32px); font-weight:800; line-height:1.3; flex:1;}
+.q-badge{
+  flex:none; width:56px; height:56px; border-radius:50%; background:var(--purple); color:#fff;
+  display:flex; align-items:center; justify-content:center; font-size:21px; font-weight:800;
+}
+.q-badge.low{background:var(--red);}
+.q-sub{font-size:13px; color:var(--muted); margin-top:10px; letter-spacing:.5px;}
+/* answer buttons */
+.answers{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:18px;}
+@media (max-width:560px){.answers{grid-template-columns:1fr;} .mod-grid{grid-template-columns:1fr;} .mode-row{grid-template-columns:1fr;}}
+.ans{
+  border:none; border-radius:12px; padding:20px 16px; font-size:19px; font-weight:800; color:#fff;
+  cursor:pointer; display:flex; align-items:center; gap:12px; text-align:left;
+  box-shadow:0 6px 0 rgba(0,0,0,.22); transition:transform .07s, box-shadow .07s, opacity .2s;
+  line-height:1.35;
+}
+.ans:active{transform:translateY(4px); box-shadow:0 2px 0 rgba(0,0,0,.22);}
+.ans .shape{font-size:24px; flex:none;}
+.ans.locked{cursor:default;}
+.ans.locked:active{transform:none;}
+.ans.dim{opacity:.35;}
+.ans.mark-correct{outline:4px solid #fff; outline-offset:-4px;}
+.ans.mark-wrong{outline:4px solid rgba(0,0,0,.55); outline-offset:-4px;}
+/* feedback */
+.feedback{margin-top:16px; font-size:18px; font-weight:800; min-height:28px; text-align:center;}
+.feedback.good{color:var(--green);}
+.feedback.bad{color:var(--red);}
+.explain{margin-top:6px; font-size:15px; color:var(--muted); text-align:center; line-height:1.5;}
+/* buzz */
+.buzz-row{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:18px;}
+.buzz{
+  border:none; border-radius:14px; padding:26px 12px; font-size:22px; font-weight:800; color:#fff;
+  cursor:pointer; box-shadow:0 6px 0 rgba(0,0,0,.22); transition:transform .07s, opacity .2s;
+}
+.buzz:active{transform:translateY(4px); box-shadow:0 2px 0 rgba(0,0,0,.22);}
+.buzz:disabled{opacity:.35; cursor:default;}
+.buzz small{display:block; font-size:13px; font-weight:600; opacity:.9; margin-top:6px;}
+.buzz-hint{text-align:center; color:var(--muted); font-size:14px; margin-top:12px;}
+.turn-banner{
+  text-align:center; font-size:17px; font-weight:800; color:var(--purple); margin-top:14px;
+}
+/* results */
+.big-score{font-size:clamp(48px,10vw,84px); font-weight:800; color:var(--purple); text-align:center;}
+.result-title{text-align:center; font-size:26px; font-weight:800; margin-bottom:4px;}
+.result-sub{text-align:center; color:var(--muted); margin-bottom:18px;}
+.stat-row{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:16px 0;}
+.stat{background:#f4f4f7; border-radius:12px; padding:14px; text-align:center;}
+.stat .v{font-size:26px; font-weight:800; color:var(--purple);}
+.stat .k{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:2px;}
+.modbar{margin:8px 0;}
+.modbar .lbl{font-size:13px; font-weight:700; margin-bottom:4px; display:flex; justify-content:space-between;}
+.modbar .track{height:10px; background:#ececf0; border-radius:999px; overflow:hidden;}
+.modbar .fill{height:100%; background:var(--purple); border-radius:999px;}
+.review{margin-top:8px;}
+.rev{border-top:1px solid #eee; padding:12px 2px; font-size:14px;}
+.rev .rq{font-weight:700; margin-bottom:4px;}
+.rev .ra{color:var(--muted);}
+.rev .ra b{color:var(--ink);}
+.rev .you-bad{color:var(--red); font-weight:700;}
+.rev .you-good{color:var(--green); font-weight:700;}
+details.rev{cursor:pointer;}
+details.rev summary{font-weight:700; margin-bottom:4px; list-style:none;}
+details.rev summary::-webkit-details-marker{display:none;}
+details.rev summary::before{content:"+ "; color:var(--purple); font-weight:800;}
+details.rev[open] summary::before{content:"- ";}
+.winner-banner{
+  text-align:center; font-size:30px; font-weight:800; color:var(--purple); margin-bottom:2px;
+}
+.vs-score{display:flex; gap:12px; margin:14px 0;}
+.vs-card{flex:1; background:#f4f4f7; border-radius:12px; padding:16px; text-align:center;}
+.vs-card.winner{background:#f4eefc; outline:3px solid var(--purple);}
+.vs-card .pn{font-weight:800; font-size:17px;}
+.vs-card .ps{font-size:34px; font-weight:800; color:var(--purple); margin-top:4px;}
+.foot{margin-top:18px; display:flex; gap:10px;}
+.foot .btn-ghost{flex:1;}
+.hidden{display:none !important;}
+/* custom import */
+textarea#import-json{
+  width:100%; border:2px solid #e4e4e8; border-radius:10px; padding:11px 14px;
+  font-size:13px; font-family:ui-monospace,Menlo,Consolas,monospace; outline:none; resize:vertical;
+}
+textarea#import-json:focus{border-color:var(--purple);}
+.row-btns{display:flex; gap:10px; margin-top:10px;}
+.row-btns .btn-ghost{flex:1;}
+#import-msg{margin-top:8px;}
+.link-btn{
+  background:none; border:none; color:var(--muted); font-size:13px; cursor:pointer;
+  text-decoration:underline; padding:4px 8px; margin-top:8px;
+}
+.link-btn:hover{color:var(--red);}
+.link-btn:disabled{color:#b9b9c0; cursor:default; text-decoration:none;}
+.streak-tag{color:var(--purple);}
+  .big-code{font-size:clamp(48px,10vw,84px); font-weight:900; letter-spacing:14px; text-align:center; color:#fff; background:rgba(255,255,255,.12); border-radius:18px; padding:14px 8px 14px 22px; margin:14px 0;}
+  .live-list{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0;}
+  .chip{background:rgba(255,255,255,.14); color:#fff; border-radius:999px; padding:6px 14px; font-weight:700; font-size:15px;}
+  .chip.me{background:#d89e00; color:#2a1500;}
+  .buzz-big{display:block; width:min(320px,80vw); height:min(320px,80vw); margin:24px auto; border-radius:50%; border:none; background:#e21b3c; color:#fff; font-size:34px; font-weight:900; letter-spacing:2px; cursor:pointer; box-shadow:0 10px 0 #a3122b, 0 14px 28px rgba(0,0,0,.35);}
+  .buzz-big:active{transform:translateY(6px); box-shadow:0 4px 0 #a3122b;}
+  .buzz-big:disabled{background:#8a8f98; box-shadow:none; cursor:default; transform:none;}
+  .live-scores{display:flex; flex-wrap:wrap; gap:8px; margin:10px 0;}
+  .live-score{background:rgba(255,255,255,.1); border-radius:10px; padding:6px 12px; color:#fff; font-weight:700; font-size:14px;}
+  details{margin-top:14px; background:rgba(255,255,255,.07); border-radius:12px; padding:10px 14px;}
+  details summary{cursor:pointer; font-weight:800; color:#ffd75e;}
+  details .hint{color:#e8e2f5; font-size:14px;}
+  #fb-rules{font-family:monospace; font-size:12px;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ SETUP ============ -->
+  <section id="screen-setup" class="screen active">
+    <h1 class="title">AlgoArena</h1>
+    <p class="subtitle">CS 5800 · Algorithms Quiz Battle</p>
+    <div class="card">
+      <h2 class="sec">Mode</h2>
+      <div class="mode-row">
+        <div class="mode-card selected" id="mode-solo">
+          <div class="m-name">Solo</div>
+          <div class="m-desc">Practice alone, beat your best score</div>
+        </div>
+        <div class="mode-card" id="mode-battle">
+          <div class="m-name">2-Player Battle</div>
+          <div class="m-desc">Same screen. Buzz in first, answer fast.</div>
+        </div>
+      </div>
+
+      <h2 class="sec">Players</h2>
+      <div class="name-row">
+        <div class="field"><label>Player 1 name</label><input type="text" id="name-p1" value="Player 1" maxlength="16"></div>
+        <div class="field hidden" id="wrap-p2"><label>Player 2 name</label><input type="text" id="name-p2" value="Player 2" maxlength="16"></div>
+      </div>
+
+      <h2 class="sec">Modules <span style="font-weight:400; text-transform:none; letter-spacing:0;">(syllabus chapters)</span></h2>
+      <div class="mod-grid" id="mod-grid"></div>
+
+      <h2 class="sec">Difficulty</h2>
+      <div class="pill-row" id="diff-row">
+        <button class="pill" data-v="easy">Easy</button>
+        <button class="pill selected" data-v="medium">Medium</button>
+        <button class="pill" data-v="hard">Hard</button>
+        <button class="pill" data-v="mixed">Mixed</button>
+      </div>
+
+      <h2 class="sec">Questions</h2>
+      <div class="pill-row" id="count-row">
+        <button class="pill" data-v="5">5</button>
+        <button class="pill selected" data-v="10">10</button>
+        <button class="pill" data-v="15">15</button>
+        <button class="pill" data-v="20">20</button>
+      </div>
+
+      <h2 class="sec">Time per question</h2>
+      <div class="pill-row" id="time-row">
+        <button class="pill" data-v="15">15s</button>
+        <button class="pill selected" data-v="20">20s</button>
+        <button class="pill" data-v="30">30s</button>
+        <button class="pill" data-v="0">No limit</button>
+      </div>
+
+      <h2 class="sec">Scoring</h2>
+      <div class="pill-row" id="score-row">
+        <button class="pill selected" data-v="time">Time-based</button>
+        <button class="pill" data-v="count">Correct-count</button>
+      </div>
+      <div class="q-sub" style="margin-top:6px;">Time-based: 500-1000 pts by speed, plus streak bonus up to +500.</div>
+
+      <h2 class="sec">My questions <span style="font-weight:400; text-transform:none; letter-spacing:0;">(optional)</span></h2>
+      <div class="field">
+        <label>Paste a JSON array to add your own questions</label>
+        <textarea id="import-json" rows="4" placeholder='[{"question":"...","options":["a","b","c","d"],"answer":0,"explanation":"..."}]'></textarea>
+      </div>
+      <div class="row-btns">
+        <button class="btn-ghost" id="btn-import">Import my questions</button>
+        <button class="btn-ghost hidden" id="btn-clear-custom">Clear my questions</button>
+      </div>
+      <div class="q-sub" id="import-msg"></div>
+
+      <button class="btn-start" id="btn-start">Start Battle</button>
+    </div>
+
+    <div class="card">
+      <h2 class="sec">Live battle <span style="font-weight:400; text-transform:none; letter-spacing:0;">(online, multi-device)</span></h2>
+      <div class="q-sub">Host on the classroom screen, students join from their phones. Uses your module / difficulty / question-count selection above. 15s per answer, time-based scoring with streak bonus.</div>
+      <div class="row-btns" style="margin-top:10px;">
+        <button class="btn-ghost" id="btn-host">Host a live game</button>
+      </div>
+      <div class="name-row" style="margin-top:10px;">
+        <div class="field"><label>Room code</label><input type="text" id="join-code" maxlength="6" placeholder="ABCD" style="text-transform:uppercase"></div>
+        <div class="field"><label>Your name</label><input type="text" id="join-name" maxlength="16" placeholder="Your name"></div>
+      </div>
+      <div class="row-btns" style="margin-top:10px;">
+        <button class="btn-ghost" id="btn-join">Join a live game</button>
+      </div>
+      <div class="q-sub" id="live-msg"></div>
+      <div class="q-sub" id="fb-status" style="margin-top:6px;"></div>
+      <details>
+        <summary>Firebase setup (free, about 5 minutes, one time)</summary>
+        <div class="hint" style="margin:10px 0; line-height:1.7;">
+          1. Go to console.firebase.google.com, sign in with your Google account, and click Add project (you can skip Analytics).<br>
+          2. Left sidebar: Build &gt; Realtime Database &gt; Create Database &gt; start in <b>locked mode</b> &gt; choose us-central1 &gt; Enable.<br>
+          3. On the Realtime Database page, open the <b>Rules</b> tab, paste the rules below, and click <b>Publish</b>.<br>
+          4. Gear icon (top left) &gt; Project settings &gt; Your apps &gt; click the Web icon(&lt;/&gt;) &gt; Register app, then copy the <b>firebaseConfig</b> JSON.<br>
+          5. Paste it below and click Save. This device will remember it.
+        </div>
+        <div class="field">
+          <label>Database rules (paste in Firebase console &gt; Rules &gt; Publish)</label>
+          <textarea id="fb-rules" rows="8" readonly></textarea>
+        </div>
+        <div class="field">
+          <label>Paste your firebaseConfig JSON</label>
+          <textarea id="fb-config" rows="6" placeholder='{"apiKey":"...","authDomain":"...","databaseURL":"...","projectId":"...","appId":"..."}'></textarea>
+        </div>
+        <div class="row-btns">
+          <button class="btn-ghost" id="btn-fb-save">Save Firebase config</button>
+          <button class="btn-ghost hidden" id="btn-fb-clear">Remove config</button>
+        </div>
+        <div class="q-sub" id="fb-msg"></div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ GAME ============ -->
+  <section id="screen-game" class="screen">
+    <div class="topbar">
+      <div class="pillbox" id="hud-left">Question 1 / 10</div>
+      <div class="pillbox score" id="hud-score">Score: 0</div>
+      <button class="btn-quit" id="btn-quit">Quit</button>
+    </div>
+    <div class="timer-track" id="timer-track"><div class="timer-fill" id="timer-fill"></div></div>
+    <div class="card">
+      <div class="q-label" id="q-label">Question 1</div>
+      <div class="q-row">
+        <div class="q-text" id="q-text"></div>
+        <div class="q-badge" id="q-badge">20</div>
+      </div>
+      <div class="q-sub" id="q-sub"></div>
+      <div class="turn-banner hidden" id="turn-banner"></div>
+      <div class="answers hidden" id="answers"></div>
+      <div class="buzz-row hidden" id="buzz-row">
+        <button class="buzz" id="buzz-p1" style="background:var(--red);"><span id="buzz-p1-name">Player 1</span><small>Tap to buzz in</small></button>
+        <button class="buzz" id="buzz-p2" style="background:var(--blue);"><span id="buzz-p2-name">Player 2</span><small>Tap to buzz in</small></button>
+      </div>
+      <div class="buzz-hint hidden" id="buzz-hint">Fastest finger answers first. Wrong answer gives the other player a steal.</div>
+      <div class="feedback" id="feedback"></div>
+      <div class="explain" id="explain"></div>
+      <div style="text-align:center;"><button class="link-btn hidden" id="btn-report">Report an issue with this question</button></div>
+    </div>
+  </section>
+
+  <!-- ============ RESULTS ============ -->
+  <section id="screen-results" class="screen">    <h1 class="title" style="font-size:clamp(28px,5vw,40px);">Results</h1>
+    <p class="subtitle" id="result-sub"></p>
+    <div class="card">
+      <div id="results-body"></div>
+      <div class="foot">
+        <button class="btn-ghost" id="btn-again">Play again</button>
+        <button class="btn-ghost" id="btn-home">Change setup</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LIVE ============ -->
+  <section id="screen-live" class="screen">
+    <div id="live-body"></div>
+  </section>
+
+</div>
+<script>
+"use strict";
+const QUESTION_BANK = [{"answer": 0, "chapter": 2, "difficulty": "easy", "explanation": "In the worst case (reverse-sorted input), each of the n−1 elements is compared with all previous ones: Σ(j−1) = Θ(n²).", "module": "Module 1 (Foundations)", "options": ["Θ(n²)", "Θ(n)", "Θ(n log n)", "Θ(n³)"], "question": "What is the worst-case running time of INSERTION-SORT on n elements?", "type": "complexity"}, {"answer": 2, "chapter": 2, "difficulty": "easy", "explanation": "On an already-sorted array the inner while test fails immediately for each element, so only Θ(n) work is done.", "module": "Module 1 (Foundations)", "options": ["Θ(log n)", "Θ(1)", "Θ(n)", "Θ(n²)"], "question": "What is the best-case running time of INSERTION-SORT?", "type": "complexity"}, {"answer": 0, "chapter": 2, "difficulty": "easy", "explanation": "CLRS proves loop invariants via initialization (true before the first iteration), maintenance (each iteration preserves it), and termination (it yields the desired result).", "module": "Module 1 (Foundations)", "options": ["Initialization, maintenance, termination", "Precondition, postcondition, variant", "Assumption, contradiction, conclusion", "Base case, inductive step, conclusion"], "question": "A loop-invariant proof has three parts. Which triple is correct?", "type": "proof"}, {"answer": 2, "chapter": 2, "difficulty": "medium", "explanation": "The invariant states exactly that the prefix A[1..j−1] holds the elements originally in A[1..j−1], but in sorted order.", "module": "Module 1 (Foundations)", "options": ["At the start of each iteration, A[j..n] is sorted", "At the start, the whole array is reverse-sorted", "At the start of each iteration, A[1..j−1] contains the original elements in sorted order", "A[1] is always the minimum of the array"], "question": "What is the loop invariant of the outer for loop of INSERTION-SORT (lines 1–8)?", "type": "definition"}, {"answer": 0, "chapter": 2, "difficulty": "medium", "explanation": "Its recurrence T(n) = 2T(n/2) + Θ(n) solves to Θ(n log n) by the master method (case 2).", "module": "Module 1 (Foundations)", "options": ["Θ(n log n)", "Θ(n²)", "Θ(n log² n)", "Θ(n)"], "question": "What is the worst-case running time of MERGE-SORT?", "type": "complexity"}, {"answer": 0, "chapter": 2, "difficulty": "medium", "explanation": "MERGE copies the two halves into temporary arrays, so merge sort needs Θ(n) auxiliary space and is not in-place.", "module": "Module 1 (Foundations)", "options": ["Θ(n)", "Θ(log n)", "Θ(1) — it sorts in place", "Θ(n²)"], "question": "How much extra space does MERGE-SORT use?", "type": "behavior"}, {"answer": 1, "chapter": 2, "difficulty": "medium", "explanation": "Element j is compared with all j−1 predecessors, so the total is Σ_{j=2..n}(j−1) = n(n−1)/2.", "module": "Module 1 (Foundations)", "options": ["n²", "n(n−1)/2", "2n", "n log n"], "question": "In the worst case, how many comparisons does the inner while loop of INSERTION-SORT perform?", "type": "loop-count"}, {"answer": 0, "chapter": 2, "difficulty": "easy", "explanation": "The RAM model assumes each arithmetic, data-movement, or control instruction takes constant time.", "module": "Module 1 (Foundations)", "options": ["Θ(1) time", "Θ(n) time", "It depends on the input size", "Θ(log n) time"], "question": "In the RAM model used to analyze algorithms, what does each basic instruction cost?", "type": "definition"}, {"answer": 2, "chapter": 2, "difficulty": "medium", "explanation": "Insertion sort rearranges elements within the array (in-place) and equal keys keep their relative order (stable).", "module": "Module 1 (Foundations)", "options": ["It is in-place but not stable", "It needs Θ(n) extra space", "It is in-place and stable", "It is stable but not in-place"], "question": "Which statement about INSERTION-SORT is true?", "type": "behavior"}, {"answer": 1, "chapter": 2, "difficulty": "medium", "explanation": "Termination: the loop ends with j = n+1, so the invariant 'A[1..j−1] sorted' becomes 'A[1..n] sorted'.", "module": "Module 1 (Foundations)", "options": ["The running time is Θ(n²)", "When j = n+1, the invariant implies A[1..n] is fully sorted", "The loop runs exactly n times", "No element is ever moved twice"], "question": "In the loop-invariant proof of INSERTION-SORT, what does the termination step establish?", "type": "proof"}, {"answer": 3, "chapter": 3, "difficulty": "easy", "explanation": "Θ means there exist c1, c2, n0 with 0 ≤ c1·g(n) ≤ f(n) ≤ c2·g(n) for all n ≥ n0.", "module": "Module 1 (Foundations)", "options": ["f is at most g for all n", "f grows strictly slower than g", "f equals g", "f is asymptotically tightly bounded above and below by g"], "question": "f(n) = Θ(g(n)) means…", "type": "definition"}, {"answer": 0, "chapter": 3, "difficulty": "easy", "explanation": "O is an asymptotic upper bound: 0 ≤ f(n) ≤ c·g(n) for all sufficiently large n.", "module": "Module 1 (Foundations)", "options": ["f grows no faster than g, up to a constant factor", "f grows at least as fast as g", "f and g grow at exactly the same rate", "f grows strictly slower than g"], "question": "f(n) = O(g(n)) means…", "type": "definition"}, {"answer": 2, "chapter": 3, "difficulty": "easy", "explanation": "Ω is an asymptotic lower bound: 0 ≤ c·g(n) ≤ f(n) for all sufficiently large n.", "module": "Module 1 (Foundations)", "options": ["f is bounded above by g", "f grows no faster than g", "f grows at least as fast as g, up to a constant factor", "f grows strictly faster than g"], "question": "f(n) = Ω(g(n)) means…", "type": "definition"}, {"answer": 2, "chapter": 3, "difficulty": "medium", "explanation": "Little-o is a strict upper bound (the ratio tends to 0), while big-O permits f(n) = Θ(g(n)).", "module": "Module 1 (Foundations)", "options": ["They are identical", "o is a lower bound and O is an upper bound", "o requires f(n)/g(n) → 0; O allows f to match g up to a constant", "o applies only to polynomials"], "question": "What is the difference between o(g(n)) and O(g(n))?", "type": "definition"}, {"answer": 2, "chapter": 3, "difficulty": "medium", "explanation": "Lower-order terms and constant coefficients are dropped in asymptotic notation.", "module": "Module 1 (Foundations)", "options": ["Ω(n³)", "Θ(n³)", "Θ(n²)", "O(n)"], "question": "2n² + 100n + 50 = ?", "type": "complexity"}, {"answer": 1, "chapter": 3, "difficulty": "medium", "explanation": "Θ is transitive: the constant-factor sandwich transfers through g.", "module": "Module 1 (Foundations)", "options": ["f(n) = O(h(n)) only", "f(n) = Θ(h(n))", "Nothing can be concluded", "f(n) = o(h(n))"], "question": "If f(n) = Θ(g(n)) and g(n) = Θ(h(n)), then…", "type": "definition"}, {"answer": 0, "chapter": 3, "difficulty": "hard", "explanation": "n! grows strictly faster than any exponential: n!/2ⁿ → ∞.", "module": "Module 1 (Foundations)", "options": ["n! = ω(2ⁿ)", "2ⁿ = ω(n!)", "2ⁿ = Θ(n!)", "n! = O(2ⁿ)"], "question": "Which statement is true?", "type": "complexity"}, {"answer": 2, "chapter": 3, "difficulty": "medium", "explanation": "Change of base: log_a n = (log_b n)/(log_b a), a constant factor.", "module": "Module 1 (Foundations)", "options": ["log_a n = o(log_b n)", "They are unrelated", "Θ(log n) — the base only changes a constant factor", "log_a n = ω(log_b n)"], "question": "For constants a, b > 1, how do log_a n and log_b n compare asymptotically?", "type": "definition"}, {"answer": 2, "chapter": 3, "difficulty": "easy", "explanation": "Asymptotically: n log n < n^1.5 < n² < 2ⁿ.", "module": "Module 1 (Foundations)", "options": ["2ⁿ", "n²", "n log n", "n^1.5"], "question": "Which grows slowest as n → ∞?", "type": "complexity"}, {"answer": 0, "chapter": 3, "difficulty": "hard", "explanation": "n² = O(n) is false — no constant c makes n² ≤ c·n for all large n; the other three are standard properties.", "module": "Module 1 (Foundations)", "options": ["n² = O(n)", "n = O(n²)", "f(n) = O(g(n)) implies g(n) = Ω(f(n))", "f(n) = Θ(g(n)) iff f(n) = O(g(n)) and f(n) = Ω(g(n))"], "question": "Which statement is FALSE?", "type": "definition"}, {"answer": 2, "chapter": 4, "difficulty": "easy", "explanation": "Merge sort splits into two halves (2T(n/2)) and merging costs Θ(n).", "module": "Module 1 (Foundations)", "options": ["T(n) = T(n/2) + Θ(n)", "T(n) = 2T(n/2) + Θ(1)", "T(n) = 2T(n/2) + Θ(n)", "T(n) = T(n−1) + Θ(n)"], "question": "What recurrence describes MERGE-SORT?", "type": "recurrence"}, {"answer": 0, "chapter": 4, "difficulty": "easy", "explanation": "Each step discards half the array (T(n/2)) with Θ(1) extra work.", "module": "Module 1 (Foundations)", "options": ["T(n) = T(n/2) + Θ(1)", "T(n) = T(n−1) + Θ(1)", "T(n) = 2T(n/2) + Θ(n)", "T(n) = 2T(n/2) + Θ(1)"], "question": "What recurrence describes BINARY-SEARCH?", "type": "recurrence"}, {"answer": 1, "chapter": 4, "difficulty": "medium", "explanation": "log_3 9 = 2 and n = O(n^{2−ε}): master method case 1 gives Θ(n^{log_3 9}) = Θ(n²).", "module": "Module 1 (Foundations)", "options": ["Θ(n³)", "Θ(n²)", "Θ(n² log n)", "Θ(n log n)"], "question": "Solve T(n) = 9T(n/3) + n.", "type": "recurrence"}, {"answer": 2, "chapter": 4, "difficulty": "medium", "explanation": "log_2 4 = 2 and n² = Θ(n²): case 2 gives Θ(n² log n). Answering Θ(n²) is the classic mistake.", "module": "Module 1 (Foundations)", "options": ["Θ(n³)", "Θ(n² log² n)", "Θ(n² log n)", "Θ(n²)"], "question": "Solve T(n) = 4T(n/2) + n².", "type": "recurrence"}, {"answer": 0, "chapter": 4, "difficulty": "medium", "explanation": "log_2 3 ≈ 1.585 and n² = Ω(n^{1.585+ε}), with 3(n/2)² = (3/4)n² satisfying the regularity condition: case 3 gives Θ(n²).", "module": "Module 1 (Foundations)", "options": ["Θ(n²)", "Θ(n^{log_2 3})", "Θ(n² log n)", "Θ(n³)"], "question": "Solve T(n) = 3T(n/2) + n².", "type": "recurrence"}, {"answer": 1, "chapter": 4, "difficulty": "hard", "explanation": "Here f(n) = n/log n differs from n^{log_2 2} = n by only a polylog factor: not polynomially smaller (rules out case 1), not Θ(n log^k n) (rules out case 2), not polynomially larger (rules out case 3). It falls in the gap, so the master method does not apply.", "module": "Module 1 (Foundations)", "options": ["T(n) = 4T(n/2) + n", "T(n) = 2T(n/2) + n/log n", "T(n) = T(n/2) + Θ(1)", "T(n) = 2T(n/2) + n"], "question": "To which recurrence does the master method NOT apply?", "type": "recurrence"}, {"answer": 3, "chapter": 4, "difficulty": "medium", "explanation": "Substitution = guess the form of the bound, then verify it with an inductive proof (base case plus inductive step).", "module": "Module 1 (Foundations)", "options": ["Unroll the recurrence completely", "Draw the recursion tree and sum each level", "Apply the master theorem directly", "Guess a bound, then prove it by induction"], "question": "What are the steps of the substitution method?", "type": "proof"}, {"answer": 0, "chapter": 4, "difficulty": "medium", "explanation": "Costs shrink geometrically by factor 3/16 per level, so the root's cn² dominates: T(n) = Θ(n²).", "module": "Module 1 (Foundations)", "options": ["the root level", "the middle levels", "all levels equally", "the leaves"], "question": "For T(n) = 3T(n/4) + cn², the recursion-tree total is dominated by…", "type": "proof"}, {"answer": 1, "chapter": 4, "difficulty": "easy", "explanation": "Strassen uses 7 recursive multiplications of n/2 × n/2 matrices plus Θ(n²) additions.", "module": "Module 1 (Foundations)", "options": ["T(n) = 8T(n/2) + Θ(n²)", "T(n) = 7T(n/2) + Θ(n²)", "T(n) = 2T(n/2) + Θ(n²)", "T(n) = 7T(n/2) + Θ(n³)"], "question": "What recurrence describes Strassen's matrix multiplication?", "type": "recurrence"}, {"answer": 3, "chapter": 4, "difficulty": "medium", "explanation": "Master method case 1: log_2 7 ≈ 2.81 < 3, beating naive Θ(n³) multiplication.", "module": "Module 1 (Foundations)", "options": ["Θ(n³)", "Θ(n² log n)", "Θ(n^{log_7 2})", "Θ(n^{lg 7}) ≈ Θ(n^2.81)"], "question": "What is Strassen's asymptotic running time?", "type": "recurrence"}, {"answer": 1, "chapter": 5, "difficulty": "easy", "explanation": "I_A is 1 with probability Pr(A) and 0 otherwise, so E[I_A] = 1·Pr(A) + 0 = Pr(A).", "module": "Module 1 (Foundations)", "options": ["1", "Pr(A)", "The number of outcomes in A", "0"], "question": "For an indicator random variable I_A, E[I_A] equals…", "type": "definition"}, {"answer": 3, "chapter": 5, "difficulty": "medium", "explanation": "Linearity of expectation needs no independence assumption — that is what makes it so useful.", "module": "Module 1 (Foundations)", "options": ["only for discrete variables", "only when the X_i are independent", "only for indicator variables", "always, even when the X_i are dependent"], "question": "Linearity of expectation E[ΣX_i] = ΣE[X_i] holds…", "type": "definition"}, {"answer": 0, "chapter": 5, "difficulty": "medium", "explanation": "Summing 1/i over i = 1..n gives the harmonic number H_n = ln n + O(1).", "module": "Module 1 (Foundations)", "options": ["ln n + O(1)", "Θ(1)", "n/2", "Θ(n)"], "question": "In the hiring problem with n candidates in random order, the expected number of hires is…", "type": "complexity"}, {"answer": 2, "chapter": 5, "difficulty": "medium", "explanation": "Candidate i is hired iff it is the best among the first i candidates, which happens with probability 1/i.", "module": "Module 1 (Foundations)", "options": ["(n−i)/n", "1/n", "1/i", "1/2"], "question": "In HIRE-ASSISTANT, candidate i is hired with probability…", "type": "loop-count"}, {"answer": 1, "chapter": 5, "difficulty": "easy", "explanation": "Probabilistic analysis puts randomness in the input distribution; a randomized algorithm puts it in its own random choices.", "module": "Module 1 (Foundations)", "options": ["Randomized algorithms are always faster", "Probabilistic analysis assumes a distribution on inputs; a randomized algorithm flips coins itself", "Probabilistic analysis needs no randomness", "They are the same thing"], "question": "What is the difference between probabilistic analysis and a randomized algorithm?", "type": "definition"}, {"answer": 2, "chapter": 5, "difficulty": "easy", "explanation": "If candidates arrive in increasing order of quality, every one of the n candidates is hired.", "module": "Module 1 (Foundations)", "options": ["log n", "1", "n", "n²"], "question": "What is the worst-case number of hires in the hiring problem?", "type": "complexity"}, {"answer": 3, "chapter": 5, "difficulty": "medium", "explanation": "Write total hires X = ΣX_i with X_i indicating 'candidate i hired'; E[X] = ΣE[X_i] = Σ1/i.", "module": "Module 1 (Foundations)", "options": ["the master method", "a loop-invariant argument", "the substitution method", "applying linearity of expectation to indicator variables X_i"], "question": "The key step in analyzing the expected hiring cost is…", "type": "proof"}, {"answer": 2, "chapter": 5, "difficulty": "medium", "explanation": "Random permutation makes the input order uniformly random, so the same harmonic-series analysis applies with no assumption on the input.", "module": "Module 1 (Foundations)", "options": ["impossible to analyze", "Θ(n) because the input is adversarial", "the same Θ(log n) analysis — every permutation is equally likely", "Θ(1)"], "question": "RANDOMIZED-HIRE-ASSISTANT randomly permutes the candidates first. Its expected hiring cost is…", "type": "behavior"}, {"answer": 3, "chapter": 5, "difficulty": "medium", "explanation": "The analysis only needs each permutation to be equally likely; how that uniformity arises does not matter.", "module": "Module 1 (Foundations)", "options": ["Both use indicator variables", "Both interview fewer candidates", "Both hire exactly ln n people", "Both make every ordering of candidates equally likely"], "question": "Why do both random input order and random permutation give the same expected hiring cost?", "type": "definition"}, {"answer": 1, "chapter": 5, "difficulty": "easy", "explanation": "The for loop runs over all n candidates regardless of hiring decisions; only the hiring count varies.", "module": "Module 1 (Foundations)", "options": ["It depends on the input", "n — every candidate is interviewed exactly once", "Only the hired ones", "log n on average"], "question": "HIRE-ASSISTANT always interviews how many candidates?", "type": "loop-count"}, {"answer": 0, "chapter": 6, "difficulty": "easy", "explanation": "CLRS uses 1-based indexing: LEFT(i) = 2i, RIGHT(i) = 2i+1, PARENT(i) = ⌊i/2⌋.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["2i and 2i+1", "i/2 and i/2+1", "2i−1 and 2i+1", "2i and 2i+2"], "question": "In a 1-indexed binary heap array, the children of node i are at…", "type": "definition"}, {"answer": 2, "chapter": 6, "difficulty": "easy", "explanation": "MAX-HEAPIFY follows one path down the heap, whose height is ⌊log n⌋.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["O(1)", "O(n log n)", "O(log n)", "O(n)"], "question": "Worst-case running time of MAX-HEAPIFY?", "type": "complexity"}, {"answer": 1, "chapter": 6, "difficulty": "medium", "explanation": "The naive O(n log n) bound is loose; summing height x (nodes at that height) gives an asymptotically tight Θ(n) bound.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["Θ(n log n)", "Θ(n)", "Ω(n²)", "O(n log n)"], "question": "What is the asymptotically tight bound for BUILD-MAX-HEAP?", "type": "complexity"}, {"answer": 3, "chapter": 6, "difficulty": "medium", "explanation": "Nodes ⌊n/2⌋+1..n are leaves, so the loop starts at the last non-leaf ⌊n/2⌋.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["1 up to n", "n down to 1", "⌊log n⌋ down to 1", "⌊n/2⌋ down to 1"], "question": "BUILD-MAX-HEAP calls MAX-HEAPIFY for i running from…", "type": "loop-count"}, {"answer": 2, "chapter": 6, "difficulty": "easy", "explanation": "Linear-time build plus n−1 rounds of extract-max, each O(log n).", "module": "Module 2 (Sorting and Order Statistics)", "options": ["Θ(n²)", "Θ(n log² n)", "Θ(n log n)", "Θ(n)"], "question": "Worst-case running time of HEAPSORT?", "type": "complexity"}, {"answer": 1, "chapter": 6, "difficulty": "easy", "explanation": "A heap is an almost-complete binary tree, so its height is ⌊log n⌋.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["n", "⌊log n⌋", "log² n", "⌈log n⌉"], "question": "What is the height of an n-element heap?", "type": "definition"}, {"answer": 0, "chapter": 6, "difficulty": "medium", "explanation": "Heapsort rearranges within the array (in-place), but equal elements can change relative order (not stable).", "module": "Module 2 (Sorting and Order Statistics)", "options": ["In-place but not stable", "Both in-place and stable", "Neither — it needs Θ(n) extra space", "Stable but not in-place"], "question": "Which is true of HEAPSORT?", "type": "behavior"}, {"answer": 1, "chapter": 6, "difficulty": "medium", "explanation": "Both walk up at most the height of the heap.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["Θ(n log n)", "O(log n)", "O(n)", "O(1)"], "question": "MAX-HEAP-INSERT and HEAP-INCREASE-KEY each take…", "type": "complexity"}, {"answer": 2, "chapter": 6, "difficulty": "medium", "explanation": "Every node after ⌊n/2⌋ has no children in a 1-indexed heap.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["⌊log n⌋ … n", "n/2 … n−1", "⌊n/2⌋+1 … n", "1 … ⌊n/2⌋"], "question": "In an n-element heap array, the leaves are at indices…", "type": "loop-count"}, {"answer": 2, "chapter": 6, "difficulty": "medium", "explanation": "Removing the root and re-heapifying costs one MAX-HEAPIFY: O(log n).", "module": "Module 2 (Sorting and Order Statistics)", "options": ["Θ(n log n)", "O(1)", "O(log n)", "Θ(n)"], "question": "The running time of HEAP-EXTRACT-MAX is…", "type": "complexity"}, {"answer": 2, "chapter": 7, "difficulty": "easy", "explanation": "PARTITION scans the subarray once with a constant amount of work per element.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["Θ(log n)", "Θ(n²)", "Θ(n)", "Θ(n log n)"], "question": "The running time of PARTITION on a subarray of n elements is…", "type": "complexity"}, {"answer": 3, "chapter": 7, "difficulty": "easy", "explanation": "With the last element as pivot on an already-sorted array, partitions are 0 and n−1: T(n) = T(n−1) + Θ(n) = Θ(n²).", "module": "Module 2 (Sorting and Order Statistics)", "options": ["Θ(n)", "Θ(n log n)", "Θ(n³)", "Θ(n²)"], "question": "Worst-case running time of QUICKSORT?", "type": "complexity"}, {"answer": 2, "chapter": 7, "difficulty": "medium", "explanation": "Random pivots give balanced partitions on average; the book's indicator-variable analysis yields Θ(n log n).", "module": "Module 2 (Sorting and Order Statistics)", "options": ["Θ(n log² n)", "Θ(n)", "Θ(n log n)", "Θ(n²)"], "question": "Expected running time of RANDOMIZED-QUICKSORT?", "type": "complexity"}, {"answer": 1, "chapter": 7, "difficulty": "medium", "explanation": "Quicksort partitions within the array (O(log n) stack space) but equal keys may be reordered.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["Stable and in-place", "In-place but not stable", "Stable but not in-place", "Needs Θ(n) auxiliary space"], "question": "Which is true of QUICKSORT?", "type": "behavior"}, {"answer": 2, "chapter": 7, "difficulty": "medium", "explanation": "The worst split is 0 elements on one side and n−1 on the other.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["T(n) = T(n/2) + Θ(n)", "T(n) = 2T(n−1) + Θ(1)", "T(n) = T(n−1) + Θ(n)", "T(n) = 2T(n/2) + Θ(n)"], "question": "Worst-case recurrence for QUICKSORT?", "type": "recurrence"}, {"answer": 2, "chapter": 7, "difficulty": "medium", "explanation": "Perfectly balanced splits give the same recurrence as merge sort: Θ(n log n).", "module": "Module 2 (Sorting and Order Statistics)", "options": ["T(n) = T(n/2) + Θ(n)", "T(n) = T(n−1) + Θ(n)", "T(n) = 2T(n/2) + Θ(n)", "T(n) = 2T(n/2) + Θ(1)"], "question": "Best-case recurrence for QUICKSORT?", "type": "recurrence"}, {"answer": 0, "chapter": 7, "difficulty": "medium", "explanation": "Define X_ij = 1 if elements i and j are ever compared; E[total] = ΣE[X_ij] gives a harmonic sum = Θ(n log n).", "module": "Module 2 (Sorting and Order Statistics)", "options": ["indicator variables for pairwise comparisons and linearity of expectation", "the master method", "the substitution method", "a loop invariant on the pivot"], "question": "The expected-time analysis of randomized quicksort is based on…", "type": "proof"}, {"answer": 2, "chapter": 7, "difficulty": "medium", "explanation": "The loop index j runs from p to r−1 exactly once: Θ(n) comparisons total.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["log n times", "n times per element", "Once — a single left-to-right scan", "Twice"], "question": "How many times does PARTITION compare each element with the pivot?", "type": "loop-count"}, {"answer": 3, "chapter": 7, "difficulty": "hard", "explanation": "Recursing on the smaller side first and iterating on the larger bounds the stack depth by ⌈log n⌉.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["Θ(1) extra space", "Θ(n log n) worst-case time", "stability", "O(log n) worst-case stack depth"], "question": "The tail-recursive version of QUICKSORT guarantees…", "type": "behavior"}, {"answer": 3, "chapter": 7, "difficulty": "medium", "explanation": "Swapping a uniformly random element into the pivot position makes every pivot equally likely.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["as the first element", "as the median of three", "as the middle element", "uniformly at random from the subarray"], "question": "RANDOMIZED-PARTITION chooses the pivot…", "type": "definition"}, {"answer": 2, "chapter": 8, "difficulty": "easy", "explanation": "A decision tree for n! permutations needs height ≥ log(n!) = Ω(n log n).", "module": "Module 2 (Sorting and Order Statistics)", "options": ["Ω(n²)", "Θ(n)", "Ω(n log n)", "O(n)"], "question": "Any comparison sort needs how many comparisons in the worst case?", "type": "proof"}, {"answer": 2, "chapter": 8, "difficulty": "medium", "explanation": "Each permutation needs its own leaf, so n! leaves force height ≥ ⌈log(n!)⌉.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["the master method", "an adversary argument on sorted input", "a decision tree with one leaf per permutation", "counting sort"], "question": "The Ω(n log n) lower bound is proved using…", "type": "proof"}, {"answer": 3, "chapter": 8, "difficulty": "easy", "explanation": "Counting frequencies is Θ(n+k) and placement is Θ(n).", "module": "Module 2 (Sorting and Order Statistics)", "options": ["Θ(n log n)", "Θ(nk)", "Θ(k log k)", "Θ(n+k), where k is the value range"], "question": "The running time of COUNTING-SORT is…", "type": "complexity"}, {"answer": 0, "chapter": 8, "difficulty": "medium", "explanation": "Processing input from right to left keeps equal keys ordered (stable), but it needs Θ(n+k) auxiliary arrays.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["stable but not in-place", "in-place but not stable", "both stable and in-place", "neither stable nor in-place"], "question": "COUNTING-SORT is…", "type": "behavior"}, {"answer": 0, "chapter": 8, "difficulty": "medium", "explanation": "The lower bound holds only for comparison sorts; counting sort exploits key values directly.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["It is not a comparison sort", "It only works on small inputs", "The bound applies to average case only", "It uses randomization"], "question": "Why doesn't COUNTING-SORT contradict the Ω(n log n) lower bound?", "type": "definition"}, {"answer": 1, "chapter": 8, "difficulty": "medium", "explanation": "d passes of a Θ(n+k) stable digit sort.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["Θ(n+k)", "Θ(d(n+k))", "Θ(dn log n)", "Θ(n log n)"], "question": "The running time of RADIX-SORT on d-digit numbers with base-k digits is…", "type": "complexity"}, {"answer": 1, "chapter": 8, "difficulty": "medium", "explanation": "With n buckets and uniform input, each bucket holds O(1) elements on average; worst case is Θ(n²).", "module": "Module 2 (Sorting and Order Statistics)", "options": ["Θ(n²)", "Θ(n)", "Θ(n log n)", "Θ(n√n)"], "question": "The expected running time of BUCKET-SORT on uniformly distributed input is…", "type": "complexity"}, {"answer": 2, "chapter": 8, "difficulty": "easy", "explanation": "LSD-first with a stable digit sort is what makes the induction work.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["from most significant to least significant", "in random order", "from least significant to most significant", "from the middle outward"], "question": "RADIX-SORT must process digits…", "type": "behavior"}, {"answer": 1, "chapter": 8, "difficulty": "medium", "explanation": "In-place allows only a constant number of elements outside the input array.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["no extra space at all", "O(1) extra space beyond the input array", "Θ(n) extra space", "Θ(log n) extra space"], "question": "'Sorting in place' means the algorithm uses…", "type": "definition"}, {"answer": 3, "chapter": 8, "difficulty": "hard", "explanation": "⌈log(5!)⌉ = ⌈log 120⌉ = ⌈6.91⌉ = 7.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["10", "5", "6", "7"], "question": "What is the minimum number of comparisons needed to sort 5 elements in the worst case?", "type": "loop-count"}, {"answer": 0, "chapter": 9, "difficulty": "easy", "explanation": "Like quicksort but recursing on only one side, the expected work is linear.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["Θ(n)", "Θ(n²)", "Θ(log n)", "Θ(n log n)"], "question": "Expected running time of RANDOMIZED-SELECT?", "type": "complexity"}, {"answer": 0, "chapter": 9, "difficulty": "medium", "explanation": "Consistently bad pivots give T(n) = T(n−1) + Θ(n), same as quicksort's worst case.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["Θ(n²)", "Θ(2ⁿ)", "Θ(n)", "Θ(n log n)"], "question": "Worst-case running time of RANDOMIZED-SELECT?", "type": "complexity"}, {"answer": 3, "chapter": 9, "difficulty": "medium", "explanation": "T(n) ≤ T(n/5) + T(7n/10) + O(n) solves to Θ(n) by substitution.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["Θ(n²)", "Θ(n log n)", "Θ(n√n)", "Θ(n)"], "question": "Worst-case running time of deterministic SELECT (median of medians)?", "type": "complexity"}, {"answer": 3, "chapter": 9, "difficulty": "medium", "explanation": "CLRS uses groups of 5: insertion-sort each group and take its median.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["7", "10", "3", "5"], "question": "SELECT groups the elements into groups of…", "type": "definition"}, {"answer": 0, "chapter": 9, "difficulty": "hard", "explanation": "With groups of 3 the '7n/10' fraction becomes 2n/3, and T(n/3)+T(2n/3)+O(n) is Θ(n log n), not linear.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["It would give T(n) ≤ T(n/3) + T(2n/3) + O(n) = Θ(n log n)", "Groups of 3 are not odd", "The median of 3 is undefined", "It would need Ω(n²) space"], "question": "Why can't SELECT use groups of 3 and stay linear?", "type": "proof"}, {"answer": 0, "chapter": 9, "difficulty": "medium", "explanation": "Recurse on the medians (n/5) and then on at most 7n/10 elements, plus linear partitioning.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["T(n) ≤ T(n/5) + T(7n/10) + O(n)", "T(n) = 2T(n/2) + O(n)", "T(n) ≤ 2T(n/5) + O(n)", "T(n) = T(n−1) + O(n)"], "question": "Which recurrence describes deterministic SELECT?", "type": "recurrence"}, {"answer": 0, "chapter": 9, "difficulty": "medium", "explanation": "Compare pairs first (⌊n/2⌋), then n/2 − 1 for the max of winners and n/2 − 1 for the min of losers: 3⌊n/2⌋ total.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["3⌊n/2⌋", "n log n", "2n − 2", "2n"], "question": "How many comparisons suffice to find both the minimum and maximum of n elements?", "type": "loop-count"}, {"answer": 3, "chapter": 9, "difficulty": "easy", "explanation": "Every element except the minimum must lose at least one comparison: n−1 are necessary and sufficient.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["Θ(n log n) comparisons", "O(1) comparisons", "Θ(log n) comparisons", "Θ(n) comparisons, and this is optimal"], "question": "Finding the minimum of n elements requires…", "type": "complexity"}, {"answer": 3, "chapter": 9, "difficulty": "medium", "explanation": "Only the side containing the i-th order statistic is explored; the other is discarded.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["needs Θ(n) extra space", "uses a deterministic pivot", "is stable", "recurses on only one side of the partition"], "question": "RANDOMIZED-SELECT differs from QUICKSORT in that it…", "type": "behavior"}, {"answer": 0, "chapter": 9, "difficulty": "medium", "explanation": "Order statistics rank elements: minimum is 1st, maximum is nth, median is in the middle.", "module": "Module 2 (Sorting and Order Statistics)", "options": ["its i-th smallest element", "its i-th largest element", "the median", "the element at index i"], "question": "The i-th order statistic of a set is…", "type": "definition"}, {"answer": 3, "chapter": 15, "difficulty": "easy", "explanation": "DP applies when optimal solutions contain optimal subproblem solutions and subproblems repeat.", "module": "Module 3 (Advanced Design and Analysis Techniques)", "options": ["divide and conquer and memoization", "recursion and backtracking", "greedy choice and matroid structure", "optimal substructure and overlapping subproblems"], "question": "The two hallmarks of problems suited to dynamic programming are…", "type": "definition"}, {"answer": 1, "chapter": 15, "difficulty": "medium", "explanation": "It is the 'optimal solutions to subproblems' property that lets DP assemble answers bottom-up.", "module": "Module 3 (Advanced Design and Analysis Techniques)", "options": ["every subproblem is solved once", "an optimal solution contains optimal solutions to subproblems", "the problem is solved greedily", "subproblems are independent"], "question": "Optimal substructure means…", "type": "definition"}, {"answer": 0, "chapter": 15, "difficulty": "medium", "explanation": "The recursion branches over all 2^{n−1} ways to cut, giving T(n) = 2ⁿ.", "module": "Module 3 (Advanced Design and Analysis Techniques)", "options": ["Θ(2ⁿ)", "Θ(n log n)", "Θ(n²)", "Θ(n!)"], "question": "The running time of the naive recursive CUT-ROD is…", "type": "complexity"}, {"answer": 3, "chapter": 15, "difficulty": "medium", "explanation": "n subproblems, each trying n cuts: Θ(n²) total.", "module": "Module 3 (Advanced Design and Analysis Techniques)", "options": ["Θ(n)", "Θ(2ⁿ)", "Θ(n³)", "Θ(n²)"], "question": "The running time of memoized CUT-ROD is…", "type": "complexity"}, {"answer": 1, "chapter": 15, "difficulty": "medium", "explanation": "Θ(n²) subproblems (chain lengths × start positions), each trying O(n) split points.", "module": "Module 3 (Advanced Design and Analysis Techniques)", "options": ["Θ(n³) time, Θ(n³) space", "Θ(n³) time, Θ(n²) space", "Θ(n²) time, Θ(n) space", "Θ(2ⁿ) time, Θ(n) space"], "question": "What are the running time and space requirements of MATRIX-CHAIN-ORDER?", "type": "complexity"}, {"answer": 2, "chapter": 15, "difficulty": "medium", "explanation": "The table has mn cells, each filled in Θ(1).", "module": "Module 3 (Advanced Design and Analysis Techniques)", "options": ["Θ(mn log(mn)) time", "Θ(m+n) time", "Θ(mn) time and space", "Θ(2^{m+n}) time"], "question": "The running time of LCS-LENGTH on sequences of lengths m and n is…", "type": "complexity"}, {"answer": 0, "chapter": 15, "difficulty": "medium", "explanation": "Assume an optimal solution, swap in an optimal subproblem solution ('cut and paste'); if the result is better, contradiction.", "module": "Module 3 (Advanced Design and Analysis Techniques)", "options": ["cut-and-paste argument", "loop invariant", "master method", "decision tree"], "question": "Optimal substructure is typically proved with a…", "type": "proof"}, {"answer": 2, "chapter": 15, "difficulty": "medium", "explanation": "Overlapping subproblems would be re-solved exponentially often; memoization/tabulation solves each once.", "module": "Module 3 (Advanced Design and Analysis Techniques)", "options": ["DP avoids recursion", "DP uses less code", "Each distinct subproblem is solved only once", "DP is always Θ(n log n)"], "question": "Why does DP beat naive divide-and-conquer on these problems?", "type": "behavior"}, {"answer": 2, "chapter": 15, "difficulty": "medium", "explanation": "Try every first cut i, take its price plus the optimal revenue for the remainder.", "module": "Module 3 (Advanced Design and Analysis Techniques)", "options": ["r_n = r_{n−1} + p_n", "r_n = max(p_n, r_{n−1})", "r_n = max_{1≤i≤n}(p_i + r_{n−i})", "r_n = Σ_{i=1}^{n} p_i"], "question": "The rod-cutting recurrence is…", "type": "recurrence"}, {"answer": 0, "chapter": 15, "difficulty": "hard", "explanation": "Merge sort's subproblems are disjoint (no overlap), so there is nothing for memoization to save.", "module": "Module 3 (Advanced Design and Analysis Techniques)", "options": ["merge sort", "rod cutting", "LCS", "matrix-chain multiplication"], "question": "DP gives no asymptotic speedup over plain divide-and-conquer for…", "type": "behavior"}, {"answer": 2, "chapter": 16, "difficulty": "easy", "explanation": "Greedy works when we can safely commit to the locally best choice at each step.", "module": "Module 3 (Advanced Design and Analysis Techniques)", "options": ["greedy is always faster than DP", "optimal substructure is unnecessary", "a globally optimal solution can be built from locally optimal choices", "every choice must be optimal for all subproblems"], "question": "The greedy-choice property says…", "type": "definition"}, {"answer": 0, "chapter": 16, "difficulty": "medium", "explanation": "Picking the activity that finishes first leaves maximum room for the rest — provably optimal.", "module": "Module 3 (Advanced Design and Analysis Techniques)", "options": ["earliest finish time", "shortest duration", "earliest start time", "latest finish time"], "question": "For ACTIVITY-SELECTOR, the greedy strategy sorts activities by…", "type": "definition"}, {"answer": 3, "chapter": 16, "difficulty": "medium", "explanation": "Show some optimal solution can be modified to include the greedy choice without getting worse.", "module": "Module 3 (Advanced Design and Analysis Techniques)", "options": ["cut-and-paste on subproblems", "adversary argument", "master method", "exchange argument"], "question": "Greedy correctness is usually proved with an…", "type": "proof"}, {"answer": 3, "chapter": 16, "difficulty": "medium", "explanation": "Sorting by finish time dominates; the greedy scan itself is Θ(n).", "module": "Module 3 (Advanced Design and Analysis Techniques)", "options": ["Θ(n²)", "Θ(n)", "Θ(n² log n)", "Θ(n log n)"], "question": "Total running time of the greedy ACTIVITY-SELECTOR?", "type": "complexity"}, {"answer": 0, "chapter": 16, "difficulty": "medium", "explanation": "No codeword is a prefix of another, so decoding is unambiguous, and expected length is minimized.", "module": "Module 3 (Advanced Design and Analysis Techniques)", "options": ["prefix-free code", "encrypted code", "error-correcting code", "fixed-length code"], "question": "Huffman coding produces an optimal…", "type": "definition"}, {"answer": 1, "chapter": 16, "difficulty": "medium", "explanation": "n−1 merges, each with two EXTRACT-MIN and one INSERT: O(log n) each.", "module": "Module 3 (Advanced Design and Analysis Techniques)", "options": ["O(n²)", "O(n log n)", "Θ(n log² n)", "Θ(n)"], "question": "The running time of HUFFMAN with a binary heap is…", "type": "complexity"}, {"answer": 2, "chapter": 16, "difficulty": "medium", "explanation": "Minimizing Σ frequency × length pushes frequent symbols to short codes.", "module": "Module 3 (Advanced Design and Analysis Techniques)", "options": ["a codeword of length 1", "the same length as all others", "a shorter codeword", "a longer codeword"], "question": "In an optimal prefix code, a more frequent character gets…", "type": "behavior"}, {"answer": 1, "chapter": 16, "difficulty": "hard", "explanation": "Matroids (with the exchange property on independent sets) are precisely where greedy is optimal — e.g., graphic matroids give MST.", "module": "Module 3 (Advanced Design and Analysis Techniques)", "options": ["DAG", "matroid", "graph", "tree"], "question": "The greedy algorithm finds a minimum-weight maximal independent set exactly when the structure is a…", "type": "definition"}, {"answer": 2, "chapter": 16, "difficulty": "medium", "explanation": "Exchange arguments justify greedy choices; cut-and-paste establishes optimal substructure in DP proofs.", "module": "Module 3 (Advanced Design and Analysis Techniques)", "options": ["Master method for both", "Loop invariant for both", "Exchange argument for greedy; cut-and-paste for optimal substructure", "Cut-and-paste for greedy; exchange for DP"], "question": "Which proof technique matches which paradigm?", "type": "proof"}, {"answer": 1, "chapter": 16, "difficulty": "easy", "explanation": "0-1 knapsack has counterexamples (a valuable heavy item beats greedy's ratio choice); fractional knapsack is greedy-optimal.", "module": "Module 3 (Advanced Design and Analysis Techniques)", "options": ["Only with integer weights", "No — but it works for the fractional version", "Only for small n", "Yes, always"], "question": "Does the greedy strategy work for 0-1 KNAPSACK?", "type": "behavior"}, {"answer": 3, "chapter": 22, "difficulty": "easy", "explanation": "Each vertex is enqueued once and each adjacency list scanned once.", "module": "Module 4 (Graph Algorithms)", "options": ["Θ(V²)", "Θ(VE)", "Θ(E log V)", "Θ(V+E)"], "question": "The running time of BFS on an adjacency-list graph is…", "type": "complexity"}, {"answer": 0, "chapter": 22, "difficulty": "easy", "explanation": "Same accounting as BFS: Θ(V) for vertices plus Θ(E) for edge scans.", "module": "Module 4 (Graph Algorithms)", "options": ["Θ(V+E)", "Θ(VE)", "Θ(E log V)", "Θ(V²)"], "question": "The running time of DFS on an adjacency-list graph is…", "type": "complexity"}, {"answer": 0, "chapter": 22, "difficulty": "easy", "explanation": "BFS explores in increasing distance; d[v] = δ(s,v) for unweighted graphs.", "module": "Module 4 (Graph Algorithms)", "options": ["shortest paths (fewest edges) in an unweighted graph", "a minimum spanning tree", "all connected components", "a topological order"], "question": "BFS from a source computes…", "type": "definition"}, {"answer": 3, "chapter": 22, "difficulty": "medium", "explanation": "In undirected DFS the first-visited endpoint becomes an ancestor, so forward/cross edges cannot occur.", "module": "Module 4 (Graph Algorithms)", "options": ["a tree edge or a cross edge", "a back edge or a cross edge", "a tree edge or a forward edge", "a tree edge or a back edge"], "question": "In DFS of an undirected graph, every edge is…", "type": "definition"}, {"answer": 2, "chapter": 22, "difficulty": "medium", "explanation": "Directed graphs allow all four; e.g., an edge to a finished non-descendant is a cross edge.", "module": "Module 4 (Graph Algorithms)", "options": ["Only tree and cross", "Only tree and back", "Tree, back, forward, and cross", "Tree, back, and cross only"], "question": "In DFS of a directed graph, which edge types can appear?", "type": "definition"}, {"answer": 2, "chapter": 22, "difficulty": "medium", "explanation": "Discovery/finish times nest exactly along ancestor-descendant lines.", "module": "Module 4 (Graph Algorithms)", "options": ["d[u] < d[v] implies f[u] < f[v]", "finish times are all distinct and sorted", "the intervals [d[u],f[u]] and [d[v],f[v]] are either nested or disjoint", "every vertex has exactly one parent"], "question": "The parenthesis theorem states that for vertices u, v…", "type": "proof"}, {"answer": 3, "chapter": 22, "difficulty": "medium", "explanation": "A back edge (u,v) with v an ancestor of u closes a directed cycle, and every directed cycle yields one.", "module": "Module 4 (Graph Algorithms)", "options": ["a forward edge", "a cross edge", "a tree edge", "a back edge"], "question": "A directed graph has a cycle if and only if DFS finds…", "type": "definition"}, {"answer": 2, "chapter": 22, "difficulty": "medium", "explanation": "It is one DFS plus Θ(V) insertions at the front of a list.", "module": "Module 4 (Graph Algorithms)", "options": ["Θ(E log V)", "Θ(V²)", "Θ(V+E)", "Θ(VE)"], "question": "The running time of TOPOLOGICAL-SORT is…", "type": "complexity"}, {"answer": 3, "chapter": 22, "difficulty": "hard", "explanation": "Descendants are exactly the vertices reachable through not-yet-discovered vertices at u's discovery time.", "module": "Module 4 (Graph Algorithms)", "options": ["there is an edge (u,v)", "d[v] < d[u]", "v is discovered before u finishes", "at time d[u], v is reachable from u via a path of white vertices"], "question": "The white-path theorem: v is a descendant of u in the DFS forest iff…", "type": "proof"}, {"answer": 0, "chapter": 22, "difficulty": "medium", "explanation": "Contracting each SCC cannot create a directed cycle, or the SCCs would merge.", "module": "Module 4 (Graph Algorithms)", "options": ["a DAG", "strongly connected", "a tree", "undirected"], "question": "The component graph of strongly connected components is always…", "type": "behavior"}, {"answer": 1, "chapter": 23, "difficulty": "easy", "explanation": "Light = minimum weight among edges with one endpoint in S and one outside.", "module": "Module 4 (Graph Algorithms)", "options": ["the maximum-weight edge in the cut", "a minimum-weight edge crossing the cut", "an edge inside S", "any edge crossing the cut"], "question": "For a cut (S, V−S), a light edge is…", "type": "definition"}, {"answer": 2, "chapter": 23, "difficulty": "medium", "explanation": "The generic MST algorithm may add any light edge; 'some MST' is the precise claim (weights may tie).", "module": "Module 4 (Graph Algorithms)", "options": ["in every MST", "never in any MST", "safe — it belongs to some MST", "the unique MST edge"], "question": "The cut property says a light edge crossing a cut is…", "type": "proof"}, {"answer": 3, "chapter": 23, "difficulty": "easy", "explanation": "It maintains a set A that is always a subset of some MST, adding safe edges until |A| = V−1.", "module": "Module 4 (Graph Algorithms)", "options": ["a single path", "a star centered at the minimum vertex", "all light edges at once", "a forest, adding one safe edge at a time"], "question": "The generic MST algorithm grows…", "type": "behavior"}, {"answer": 3, "chapter": 23, "difficulty": "medium", "explanation": "Sorting E edges costs O(E log E) = O(E log V); union-find is nearly linear.", "module": "Module 4 (Graph Algorithms)", "options": ["O(VE)", "Θ(E)", "Θ(V²)", "O(E log V)"], "question": "KRUSKAL's running time is dominated by sorting: total…", "type": "complexity"}, {"answer": 0, "chapter": 23, "difficulty": "medium", "explanation": "V EXTRACT-MIN and up to E DECREASE-KEY operations, each O(log V).", "module": "Module 4 (Graph Algorithms)", "options": ["O(E log V)", "Θ(V²)", "Θ(E)", "O(VE)"], "question": "The running time of PRIM with a binary heap is…", "type": "complexity"}, {"answer": 3, "chapter": 23, "difficulty": "medium", "explanation": "Each edge is considered lightest-first; union-find rejects edges joining vertices already connected.", "module": "Module 4 (Graph Algorithms)", "options": ["from heaviest to lightest", "in arbitrary order", "only the V−1 lightest", "in nondecreasing weight order, skipping those that form cycles"], "question": "KRUSKAL processes edges…", "type": "behavior"}, {"answer": 1, "chapter": 23, "difficulty": "medium", "explanation": "Consider the cut (C, V−C) where C is the edge's tree in the forest; the edge is light for it, so the cut property applies.", "module": "Module 4 (Graph Algorithms)", "options": ["Safe edges are defined as Kruskal edges", "It is a light edge crossing the cut separating its tree from the rest", "It connects two different components", "Kruskal only adds the global minimum edge"], "question": "Why is each edge added by KRUSKAL safe?", "type": "proof"}, {"answer": 1, "chapter": 23, "difficulty": "medium", "explanation": "Safety is relative to A: the edge keeps open the possibility of completing to an MST.", "module": "Module 4 (Graph Algorithms)", "options": ["the edge will be in the final MST", "A ∪ {edge} is still a subset of some MST", "the edge connects two trees", "the edge has minimum weight in the graph"], "question": "A 'safe edge' for the current forest A means…", "type": "definition"}, {"answer": 1, "chapter": 23, "difficulty": "hard", "explanation": "Distinct weights make every cut's light edge unique, forcing one MST.", "module": "Module 4 (Graph Algorithms)", "options": ["Prim fails", "the MST is unique", "Kruskal fails", "there are exactly two MSTs"], "question": "If all edge weights are distinct, then…", "type": "behavior"}, {"answer": 3, "chapter": 23, "difficulty": "medium", "explanation": "Each UNION merges two trees, and a forest on V vertices needs at most V−1 merges.", "module": "Module 4 (Graph Algorithms)", "options": ["log V times", "V times", "E times", "V−1 times"], "question": "KRUSKAL calls UNION at most…", "type": "loop-count"}, {"answer": 3, "chapter": 24, "difficulty": "easy", "explanation": "V−1 passes, each relaxing all E edges.", "module": "Module 4 (Graph Algorithms)", "options": ["Θ(V²)", "Θ(V+E)", "O(E log V)", "O(VE)"], "question": "The running time of BELLMAN-FORD is…", "type": "complexity"}, {"answer": 3, "chapter": 24, "difficulty": "medium", "explanation": "It detects negative-weight cycles reachable from the source and reports failure instead of wrong answers.", "module": "Module 4 (Graph Algorithms)", "options": ["multiple sources", "undirected graphs only", "only positive weights", "negative edge weights (but no negative cycles reachable from s)"], "question": "BELLMAN-FORD, unlike DIJKSTRA, handles…", "type": "behavior"}, {"answer": 1, "chapter": 24, "difficulty": "medium", "explanation": "Any shortest path has at most V−1 edges, so V−1 passes suffice; one more pass detects improvement ⇒ negative cycle.", "module": "Module 4 (Graph Algorithms)", "options": ["E", "V−1 for relaxation, plus 1 to detect negative cycles", "log V", "V"], "question": "How many full passes over all edges does BELLMAN-FORD make?", "type": "loop-count"}, {"answer": 0, "chapter": 24, "difficulty": "medium", "explanation": "V EXTRACT-MIN plus up to E DECREASE-KEY, each O(log V).", "module": "Module 4 (Graph Algorithms)", "options": ["O((V+E) log V)", "Θ(V+E)", "O(VE)", "Θ(V²)"], "question": "The running time of DIJKSTRA with a binary heap is…", "type": "complexity"}, {"answer": 3, "chapter": 24, "difficulty": "easy", "explanation": "Its greedy correctness proof breaks if a negative edge can later improve an extracted vertex.", "module": "Module 4 (Graph Algorithms)", "options": ["a DAG", "integer weights", "negative edge weights", "nonnegative edge weights"], "question": "DIJKSTRA requires…", "type": "behavior"}, {"answer": 0, "chapter": 24, "difficulty": "medium", "explanation": "With nonnegative weights, no alternative path via unsettled vertices can beat the minimum d among them.", "module": "Module 4 (Graph Algorithms)", "options": ["the extracted vertex u having d[u] = δ(s,u) because weights are ≥ 0", "a loop invariant on the priority queue size", "the triangle inequality", "the cut property"], "question": "DIJKSTRA's correctness hinges on…", "type": "proof"}, {"answer": 0, "chapter": 24, "difficulty": "medium", "explanation": "Topological order plus one relaxation pass over vertices in that order.", "module": "Module 4 (Graph Algorithms)", "options": ["Θ(V+E)", "O(VE)", "O(E log V)", "Θ(V²)"], "question": "Single-source shortest paths on a DAG take…", "type": "complexity"}, {"answer": 2, "chapter": 24, "difficulty": "medium", "explanation": "Relaxation tests whether the path through u improves the best known distance to v.", "module": "Module 4 (Graph Algorithms)", "options": ["removing (u,v) from the graph", "adding w(u,v) to d[v]", "if d[v] > d[u] + w(u,v), set d[v] = d[u] + w(u,v)", "setting d[v] = w(u,v)"], "question": "Relaxing edge (u,v) means…", "type": "definition"}, {"answer": 1, "chapter": 24, "difficulty": "hard", "explanation": "Extraction is final in Dijkstra; a negative edge from an unsettled vertex can undercut a finalized distance.", "module": "Module 4 (Graph Algorithms)", "options": ["Negative weights create cycles", "A negative edge can later give a shorter path to an already-extracted vertex", "The priority queue overflows", "It cannot store negative numbers"], "question": "Why does DIJKSTRA fail with negative edge weights?", "type": "behavior"}, {"answer": 3, "chapter": 24, "difficulty": "medium", "explanation": "They encode as shortest-path constraints on a constraint graph; Bellman-Ford finds a feasible solution or detects infeasibility.", "module": "Module 4 (Graph Algorithms)", "options": ["FLOYD-WARSHALL in Θ(V³)", "BFS in Θ(V+E)", "DIJKSTRA in O(E log V)", "BELLMAN-FORD in O(VE)"], "question": "Systems of difference constraints (x_v − x_u ≤ w(u,v)) are solved with…", "type": "definition"}, {"answer": 0, "chapter": 25, "difficulty": "easy", "explanation": "Three nested loops over V vertices.", "module": "Module 5 (Selected Topics)", "options": ["Θ(V³)", "Θ(V² log V)", "Θ(V²)", "O(VE)"], "question": "The running time of FLOYD-WARSHALL is…", "type": "complexity"}, {"answer": 0, "chapter": 25, "difficulty": "medium", "explanation": "Either the shortest path using intermediate vertices {1..k} avoids k, or it goes i → k → j.", "module": "Module 5 (Selected Topics)", "options": ["d^{(k)}[i][j] = min(d^{(k−1)}[i][j], d^{(k−1)}[i][k] + d^{(k−1)}[k][j])", "d^{(k)}[i][j] = d^{(k−1)}[i][j] + d^{(k−1)}[k][j]", "d^{(k)}[i][j] = d^{(k−1)}[i][j] − w(k,j)", "d[i][j] = min over k of w(i,k)"], "question": "The Floyd-Warshall recurrence is…", "type": "recurrence"}, {"answer": 1, "chapter": 25, "difficulty": "medium", "explanation": "d^{(k)} builds on d^{(k−1)}; k outermost guarantees all i,j pairs see the same intermediate set.", "module": "Module 5 (Selected Topics)", "options": ["j, the destination", "k, the intermediate vertex set", "i, the source", "it doesn't matter"], "question": "In FLOYD-WARSHALL, the outermost loop must be over…", "type": "behavior"}, {"answer": 0, "chapter": 25, "difficulty": "medium", "explanation": "Reachability: t^{(k)}[i][j] = t^{(k−1)}[i][j] OR (t^{(k−1)}[i][k] AND t^{(k−1)}[k][j]).", "module": "Module 5 (Selected Topics)", "options": ["OR / AND on booleans", "max / ×", "XOR / OR", "+ / min"], "question": "Transitive closure via Floyd-Warshall replaces min/+ with…", "type": "behavior"}, {"answer": 1, "chapter": 25, "difficulty": "medium", "explanation": "One Bellman-Ford for reweighting plus V runs of Dijkstra: better than Θ(V³) on sparse graphs.", "module": "Module 5 (Selected Topics)", "options": ["Θ(V²)", "O(V² log V + VE)", "O(VE)", "Θ(V³)"], "question": "The running time of JOHNSON's all-pairs algorithm is…", "type": "complexity"}, {"answer": 0, "chapter": 26, "difficulty": "easy", "explanation": "Residual = remaining capacity forward, plus the ability to cancel flow backward.", "module": "Module 5 (Selected Topics)", "options": ["c_f(u,v) = c(u,v) − f(u,v)", "c_f(u,v) = c(u,v) × f(u,v)", "c_f(u,v) = c(u,v) + f(u,v)", "c_f(u,v) = f(u,v)"], "question": "In a residual network, the residual capacity is…", "type": "definition"}, {"answer": 2, "chapter": 26, "difficulty": "medium", "explanation": "Each augmentation raises flow by ≥ 1 (integer capacities), with O(E) work per augmentation.", "module": "Module 5 (Selected Topics)", "options": ["Θ(VE)", "Θ(V³)", "O(E|f*|), where |f*| is the max-flow value", "O(E log V)"], "question": "The running time of FORD-FULKERSON is…", "type": "complexity"}, {"answer": 0, "chapter": 26, "difficulty": "medium", "explanation": "BFS bounds the number of augmentations by O(VE), each costing O(E).", "module": "Module 5 (Selected Topics)", "options": ["O(VE²)", "O(V²E)", "O(E|f*|)", "Θ(V³)"], "question": "The running time of EDMONDS-KARP, which augments along shortest (BFS) paths, is…", "type": "complexity"}, {"answer": 1, "chapter": 26, "difficulty": "medium", "explanation": "No flow can exceed any cut's capacity, and Ford-Fulkerson achieves equality.", "module": "Module 5 (Selected Topics)", "options": ["every cut is a flow", "the max flow value equals the minimum cut capacity", "flow is conserved at the source", "min cut is always unique"], "question": "The max-flow min-cut theorem says…", "type": "definition"}, {"answer": 2, "chapter": 26, "difficulty": "medium", "explanation": "With the height-function analysis, saturating and non-saturating pushes total O(V³).", "module": "Module 5 (Selected Topics)", "options": ["O(VE²)", "Θ(VE)", "O(V³)", "O(E|f*|)"], "question": "The running time of the RELABEL-TO-FRONT push-relabel variant is…", "type": "complexity"}, {"answer": 0, "chapter": 27, "difficulty": "easy", "explanation": "Work = serial execution time = total number of instructions.", "module": "Module 5 (Selected Topics)", "options": ["the total time on 1 processor (all instructions)", "the number of threads", "the time on infinitely many processors", "the critical-path length"], "question": "In multithreaded analysis, 'work' T_1 is…", "type": "definition"}, {"answer": 2, "chapter": 27, "difficulty": "easy", "explanation": "Span = time with infinitely many processors = critical-path length.", "module": "Module 5 (Selected Topics)", "options": ["the speedup", "the total work divided by P", "the longest chain of dependencies (critical path)", "the average thread length"], "question": "'Span' T_∞ is…", "type": "definition"}, {"answer": 2, "chapter": 27, "difficulty": "medium", "explanation": "P processors can do at most P units of work per step.", "module": "Module 5 (Selected Topics)", "options": ["T_∞", "T_1", "T_1/P", "P × T_∞"], "question": "The work law says T_P ≥ …", "type": "definition"}, {"answer": 1, "chapter": 27, "difficulty": "medium", "explanation": "No schedule beats the critical path, regardless of processor count.", "module": "Module 5 (Selected Topics)", "options": ["T_1/P", "T_∞", "P", "T_1"], "question": "The span law says T_P ≥ …", "type": "definition"}, {"answer": 2, "chapter": 27, "difficulty": "medium", "explanation": "Parallelism = average available parallelism; speedup is bounded by it.", "module": "Module 5 (Selected Topics)", "options": ["T_P/T_1", "P/T_∞", "T_1/T_∞", "T_∞/T_1"], "question": "Parallelism is defined as…", "type": "definition"}, {"answer": 1, "chapter": 28, "difficulty": "easy", "explanation": "n² entries, each a dot product of n multiplications.", "module": "Module 5 (Selected Topics)", "options": ["Θ(n^{2.81})", "Θ(n³)", "Θ(n²)", "Θ(n log n)"], "question": "The running time of naive SQUARE-MATRIX-MULTIPLY is…", "type": "complexity"}, {"answer": 3, "chapter": 28, "difficulty": "medium", "explanation": "7 recursive multiplications: T(n) = 7T(n/2) + Θ(n²), master case 1.", "module": "Module 5 (Selected Topics)", "options": ["Θ(n³)", "Θ(n²)", "Θ(n² log n)", "Θ(n^{lg 7}) ≈ Θ(n^2.81)"], "question": "The running time of STRASSEN's algorithm is…", "type": "complexity"}, {"answer": 0, "chapter": 28, "difficulty": "medium", "explanation": "LUP-DECOMPOSITION is Θ(n³); solving Lx = b, Ux = y afterwards is only Θ(n²).", "module": "Module 5 (Selected Topics)", "options": ["Θ(n³)", "Θ(n²)", "Θ(n^{2.81})", "Θ(n log n)"], "question": "The running time of LUP decomposition of an n×n matrix is…", "type": "complexity"}, {"answer": 0, "chapter": 28, "difficulty": "medium", "explanation": "Exploiting symmetry (Cholesky-like) roughly halves operations; no pivoting is needed.", "module": "Module 5 (Selected Topics)", "options": ["needs about half the work of LUP (still Θ(n³))", "needs pivoting", "is impossible", "takes Θ(n²) time"], "question": "For symmetric positive-definite matrices, factorization…", "type": "behavior"}, {"answer": 2, "chapter": 28, "difficulty": "medium", "explanation": "Setting the gradient of ‖Ax−b‖² to zero gives AᵀAx = Aᵀb.", "module": "Module 5 (Selected Topics)", "options": ["det(A) = 0", "x = A⁻¹b always", "the normal equations AᵀAx = Aᵀb", "Ax = b exactly"], "question": "The least-squares solution minimizes ‖Ax − b‖ and satisfies…", "type": "definition"}, {"answer": 3, "chapter": 29, "difficulty": "easy", "explanation": "Standard form = maximization, ≤ constraints, nonnegative variables.", "module": "Module 5 (Selected Topics)", "options": ["x ≥ 0 only", "Ax = b and x ≥ 0", "Ax ≥ b", "Ax ≤ b and x ≥ 0"], "question": "LP in standard form is: maximize cᵀx subject to…", "type": "definition"}, {"answer": 2, "chapter": 29, "difficulty": "medium", "explanation": "Each equation has one basic variable on the left; the rest are nonbasic (initially zero).", "module": "Module 5 (Selected Topics)", "options": ["always nonnegative by definition", "the variables set to zero", "those on the left of the equations (one per equation)", "the objective coefficients"], "question": "In slack form, basic variables are…", "type": "definition"}, {"answer": 2, "chapter": 29, "difficulty": "medium", "explanation": "Klee-Minty cubes force exponential pivots, but simplex is efficient on typical instances.", "module": "Module 5 (Selected Topics)", "options": ["polynomial", "Θ(n³)", "exponential, though fast in practice", "always exponential in practice"], "question": "The simplex algorithm in the worst case is…", "type": "behavior"}, {"answer": 2, "chapter": 29, "difficulty": "medium", "explanation": "A linear objective over a polytope attains its optimum at a vertex (simplex walks vertices).", "module": "Module 5 (Selected Topics)", "options": ["at infinitely many points", "in the interior", "at a vertex of the feasible region", "at the origin"], "question": "The fundamental theorem of linear programming: if an optimum exists, it occurs…", "type": "definition"}, {"answer": 2, "chapter": 29, "difficulty": "hard", "explanation": "Weak duality bounds the primal optimum by every dual feasible solution; strong duality gives equality at optimality.", "module": "Module 5 (Selected Topics)", "options": ["dual is infeasible", "primal = dual always", "any feasible primal value ≤ any feasible dual value", "primal is unbounded"], "question": "Weak duality (maximization problem) says…", "type": "definition"}, {"answer": 0, "chapter": 30, "difficulty": "easy", "explanation": "Each of n coefficients multiplies each of n coefficients.", "module": "Module 5 (Selected Topics)", "options": ["Θ(n²)", "Θ(n)", "Θ(n³)", "Θ(n log n)"], "question": "The running time of naive polynomial multiplication (coefficient form) is…", "type": "complexity"}, {"answer": 1, "chapter": 30, "difficulty": "medium", "explanation": "Divide-and-conquer on even/odd coefficients: T(n) = 2T(n/2) + Θ(n).", "module": "Module 5 (Selected Topics)", "options": ["Θ(n)", "Θ(n log n)", "Θ(n√n)", "Θ(n²)"], "question": "The FFT evaluates a degree-n polynomial at n roots of unity in…", "type": "complexity"}, {"answer": 3, "chapter": 30, "difficulty": "easy", "explanation": "Pointwise multiplication is one multiply per point: O(n).", "module": "Module 5 (Selected Topics)", "options": ["Θ(1)", "Θ(n²)", "Θ(n log n)", "Θ(n)"], "question": "The running time of multiplying polynomials in point-value form is…", "type": "complexity"}, {"answer": 1, "chapter": 30, "difficulty": "medium", "explanation": "ω_n = e^{2πi/n}; its powers give n distinct n-th roots of 1.", "module": "Module 5 (Selected Topics)", "options": ["ω_n^n = 0", "ω_n^n = 1, with n distinct complex values", "they are all real", "ω_n = 1 only"], "question": "The n-th roots of unity satisfy…", "type": "definition"}, {"answer": 1, "chapter": 30, "difficulty": "medium", "explanation": "Convert to point-value (FFT), multiply pointwise in Θ(n), convert back (inverse FFT).", "module": "Module 5 (Selected Topics)", "options": ["interpolate → multiply → evaluate", "evaluate → pointwise multiply → interpolate", "evaluate twice and add", "multiply → evaluate → interpolate"], "question": "FFT-based polynomial multiplication does…", "type": "behavior"}, {"answer": 2, "chapter": 31, "difficulty": "easy", "explanation": "Repeatedly replaces (a,b) with (b, a mod b) until b = 0.", "module": "Module 5 (Selected Topics)", "options": ["lcm(a, b)", "the prime factors", "gcd(a, b)", "a mod b"], "question": "EUCLID(a, b) computes…", "type": "definition"}, {"answer": 2, "chapter": 31, "difficulty": "medium", "explanation": "The Fibonacci bound: k calls imply b ≥ F_{k+1}, so k = O(log b).", "module": "Module 5 (Selected Topics)", "options": ["Θ(b)", "O(b)", "O(log b)", "O(√b)"], "question": "What is the asymptotically tight bound on the number of recursive calls EUCLID makes?", "type": "complexity"}, {"answer": 3, "chapter": 31, "difficulty": "medium", "explanation": "It returns Bézout coefficients (d, x, y) with d = gcd(a,b) = ax + by.", "module": "Module 5 (Selected Topics)", "options": ["the prime factorization", "lcm(a,b)", "a⁻¹ mod b only", "x, y with ax + by = gcd(a,b)"], "question": "EXTENDED-EUCLID additionally returns…", "type": "definition"}, {"answer": 3, "chapter": 31, "difficulty": "medium", "explanation": "ax ≡ 1 (mod n) is solvable exactly when a and n are coprime.", "module": "Module 5 (Selected Topics)", "options": ["n is prime", "a < n", "a is even", "gcd(a, n) = 1"], "question": "A modular inverse of a modulo n exists iff…", "type": "definition"}, {"answer": 0, "chapter": 31, "difficulty": "medium", "explanation": "Binary exponentiation halves the exponent each step.", "module": "Module 5 (Selected Topics)", "options": ["Θ(log b) multiplications for a^b mod n", "Θ(1) multiplications", "Θ(b) multiplications", "Θ(√b) multiplications"], "question": "MODULAR-EXPONENTIATION (repeated squaring) uses…", "type": "complexity"}, {"answer": 3, "chapter": 32, "difficulty": "easy", "explanation": "Up to n−m+1 alignments, each comparing up to m characters.", "module": "Module 5 (Selected Topics)", "options": ["Θ(n log n)", "Θ(nm²)", "Θ(n+m)", "Θ((n−m+1)m)"], "question": "The running time of the naive string matcher is…", "type": "complexity"}, {"answer": 2, "chapter": 32, "difficulty": "medium", "explanation": "Rolling hash is O(1) amortized per shift; hash collisions force O(m) verification in the worst case.", "module": "Module 5 (Selected Topics)", "options": ["Θ(n log n)", "Θ(n) worst case", "Θ(n+m), worst case Θ((n−m+1)m)", "Θ(nm) always"], "question": "The expected running time of RABIN-KARP matching is…", "type": "complexity"}, {"answer": 1, "chapter": 32, "difficulty": "medium", "explanation": "Preprocessing Θ(m) plus matching Θ(n); the text pointer never moves backward.", "module": "Module 5 (Selected Topics)", "options": ["Θ(n log n)", "Θ(n+m)", "Θ(nm)", "Θ(n√m)"], "question": "The running time of KMP (KNUTH-MORRIS-PRATT) is…", "type": "complexity"}, {"answer": 2, "chapter": 32, "difficulty": "medium", "explanation": "π encodes how far the pattern can shift after a mismatch.", "module": "Module 5 (Selected Topics)", "options": ["the first mismatch position", "q mod m", "the length of the longest proper prefix of P[1..q] that is also a suffix", "the number of occurrences of P[1..q]"], "question": "The prefix function π[q] is…", "type": "definition"}, {"answer": 1, "chapter": 32, "difficulty": "medium", "explanation": "t_{s+1} = d(t_s − T[s+1]h) + T[s+m+1] mod q: drop the leading digit, shift, add the new one.", "module": "Module 5 (Selected Topics)", "options": ["Θ(log n) time", "O(1) amortized time via the rolling hash", "Θ(n) time", "Θ(m) time"], "question": "Rabin-Karp updates the hash from shift s to s+1 in…", "type": "behavior"}, {"answer": 0, "chapter": 33, "difficulty": "easy", "explanation": "cross(p0p1, p0p2) > 0 means counterclockwise turn at p0.", "module": "Module 5 (Selected Topics)", "options": ["the sign of the cross product", "the slope only", "Euclidean distance", "the dot product"], "question": "The orientation (clockwise / counterclockwise) of segments is tested with…", "type": "definition"}, {"answer": 3, "chapter": 33, "difficulty": "medium", "explanation": "Segments (p1,p2) and (p3,p4) intersect iff orientations o1,o2 straddle and o3,o4 straddle, plus collinear boundary cases.", "module": "Module 5 (Selected Topics)", "options": ["their bounding boxes overlap only", "they share an endpoint", "they have the same slope", "their orientations straddle (or an endpoint lies on the other)"], "question": "Two segments intersect if…", "type": "behavior"}, {"answer": 0, "chapter": 33, "difficulty": "medium", "explanation": "Sorting by polar angle dominates; the scan itself is linear.", "module": "Module 5 (Selected Topics)", "options": ["Θ(n log n)", "Θ(n)", "Θ(n²)", "O(nh)"], "question": "The running time of GRAHAM-SCAN is…", "type": "complexity"}, {"answer": 0, "chapter": 33, "difficulty": "medium", "explanation": "h iterations, each scanning n points for the most counterclockwise: output-sensitive.", "module": "Module 5 (Selected Topics)", "options": ["O(nh), where h = # hull vertices", "Θ(n²) always", "Θ(n)", "Θ(n log n)"], "question": "The running time of JARVIS's march (gift wrapping) is…", "type": "complexity"}, {"answer": 1, "chapter": 33, "difficulty": "medium", "explanation": "Sort once by x; the combine step scans the strip in linear time: T(n) = 2T(n/2) + O(n).", "module": "Module 5 (Selected Topics)", "options": ["Θ(n²)", "O(n log n)", "Θ(n)", "O(n√n)"], "question": "What is the asymptotically tight bound for the divide-and-conquer closest-pair algorithm?", "type": "complexity"}, {"answer": 1, "chapter": 34, "difficulty": "easy", "explanation": "P = solvable by a deterministic polynomial-time algorithm.", "module": "Module 6 (NP-Completeness)", "options": ["verifiable in polynomial time", "decidable in polynomial time", "decidable at all", "requiring exponential time"], "question": "P is the class of problems…", "type": "definition"}, {"answer": 3, "chapter": 34, "difficulty": "easy", "explanation": "NP = a 'yes' answer has a certificate checkable in polynomial time.", "module": "Module 6 (NP-Completeness)", "options": ["requiring exponential space", "unsolvable", "solvable in polynomial time", "verifiable in polynomial time"], "question": "NP is the class of problems…", "type": "definition"}, {"answer": 0, "chapter": 34, "difficulty": "medium", "explanation": "NP-complete = in NP (verifiable) + NP-hard (every NP problem ≤p reduces to it).", "module": "Module 6 (NP-Completeness)", "options": ["it is in NP and every NP problem reduces to it in polynomial time", "it reduces to an NP problem", "it cannot be verified", "it is in P"], "question": "A problem is NP-complete if…", "type": "definition"}, {"answer": 0, "chapter": 34, "difficulty": "medium", "explanation": "A ≤p B transfers hardness from A to B; the reverse direction proves nothing about B's hardness.", "module": "Module 6 (NP-Completeness)", "options": ["reduce a known NP-complete problem A to B (A ≤p B)", "reduce B to CIRCUIT-SAT", "solve B in polynomial time", "reduce B to a known NP-complete problem"], "question": "To prove B is NP-complete, you must show B ∈ NP and…", "type": "proof"}, {"answer": 3, "chapter": 34, "difficulty": "medium", "explanation": "Compose the reduction with B's polynomial algorithm to decide A in polynomial time.", "module": "Module 6 (NP-Completeness)", "options": ["A is NP-complete", "nothing follows", "B ∈ NP", "A ∈ P"], "question": "If A ≤p B and B ∈ P, then…", "type": "proof"}, {"answer": 1, "chapter": 34, "difficulty": "easy", "explanation": "The Cook-Levin theorem (1971) established CIRCUIT-SAT; others reduce from it.", "module": "Module 6 (NP-Completeness)", "options": ["SAT", "CIRCUIT-SAT", "3-CNF-SAT", "TSP"], "question": "The first problem proven NP-complete was…", "type": "definition"}, {"answer": 2, "chapter": 34, "difficulty": "medium", "explanation": "Conjunctive normal form with exactly 3 literals per clause.", "module": "Module 6 (NP-Completeness)", "options": ["a formula with 3 variables", "any boolean formula", "an AND of clauses, each an OR of exactly 3 literals", "an OR of ANDs of 3 variables"], "question": "3-CNF-SAT is NP-complete. A 3-CNF formula is…", "type": "definition"}, {"answer": 2, "chapter": 34, "difficulty": "medium", "explanation": "CLIQUE ≤p VERTEX-COVER (via complements); both are classic NP-complete problems.", "module": "Module 6 (NP-Completeness)", "options": ["MATRIX-MULTIPLY and FFT", "BFS and DFS", "CLIQUE and VERTEX-COVER", "Sorting and MST"], "question": "Which pair are both NP-complete?", "type": "definition"}, {"answer": 3, "chapter": 34, "difficulty": "hard", "explanation": "Every NP problem reduces to it, so all of NP would collapse into P.", "module": "Module 6 (NP-Completeness)", "options": ["P ≠ NP", "nothing would change", "NP would be empty", "P = NP"], "question": "If any NP-complete problem were solvable in polynomial time, then…", "type": "proof"}, {"answer": 1, "chapter": 34, "difficulty": "medium", "explanation": "NP verification must be polynomial in the length of the input instance.", "module": "Module 6 (NP-Completeness)", "options": ["polynomial in the certificate size only", "polynomial in the input size |x|", "exponential in |x|", "constant time"], "question": "A verification algorithm for a problem in NP has running time…", "type": "definition"}, {"module": "Module 1 (Foundations)", "chapter": 2, "type": "proof", "difficulty": "hard", "question": "In the loop-invariant proof of MERGE, the invariant says: at the start of each while-loop iteration, A[p..k-1] holds the k-p smallest elements of the two piles, in sorted order. The maintenance step is valid because…", "options": ["the sentinel values force L[i] <= R[j] on every iteration", "the smaller of L[i] and R[j] is the smallest element remaining in either pile", "both piles are already completely copied into A", "k - p counts how many comparisons have been made"], "answer": 1, "explanation": "Copying min(L[i], R[j]) appends the smallest not-yet-copied element, so the invariant is preserved."}, {"module": "Module 1 (Foundations)", "chapter": 2, "type": "recurrence", "difficulty": "medium", "question": "The worst-case recurrence for INSERTION-SORT is T(n) = T(n-1) + Θ(n). It solves to…", "options": ["Θ(n^2)", "Θ(n log n)", "Θ(2^n)", "Θ(n)"], "answer": 0, "explanation": "Arithmetic series: summing Θ(i) for i = 1..n gives Θ(n^2)."}, {"module": "Module 1 (Foundations)", "chapter": 2, "type": "loop-count", "difficulty": "medium", "question": "MERGE combines two sorted halves totaling n elements. The comparison L[i] <= R[j] executes at most…", "options": ["2n times", "n times", "n log n times", "n - 1 times"], "answer": 3, "explanation": "Each comparison copies one element; the final remaining element needs no comparison."}, {"module": "Module 1 (Foundations)", "chapter": 3, "type": "definition", "difficulty": "hard", "question": "Which of the following asymptotic claims is TRUE?", "options": ["2^{n+1} = O(2^n)", "2^{2n} = O(2^n)", "n! = O(2^n)", "2^n = O(n^{100})"], "answer": 0, "explanation": "2^{n+1} = 2 * 2^n, but 2^{2n} = (2^n)^2 outgrows any constant multiple of 2^n."}, {"module": "Module 1 (Foundations)", "chapter": 3, "type": "definition", "difficulty": "medium", "question": "For any constants a > 0 and b > 0, log^a n compared to n^b is…", "options": ["ω(n^b)", "Θ(n^b)", "unrelated - either can win", "o(n^b)"], "answer": 3, "explanation": "Polylogarithms grow slower than any positive polynomial power."}, {"module": "Module 1 (Foundations)", "chapter": 3, "type": "complexity", "difficulty": "medium", "question": "Compared to n^n, n! grows…", "options": ["slower: n! = o(n^n)", "at the same rate: n! = Θ(n^n)", "faster: n! = ω(n^n)", "incomparably"], "answer": 0, "explanation": "n!/n^n = (1/n)(2/n)...(n/n) tends to 0 as n grows, so n! = o(n^n)."}, {"module": "Module 1 (Foundations)", "chapter": 4, "type": "proof", "difficulty": "hard", "question": "To prove T(n) = 2T(n/2) + n is O(n log n) by substitution, a first guess of O(n) fails. The exact breaking point is…", "options": ["the recurrence is undefined at odd n", "floors and ceilings change the asymptotics", "the base case T(1) <= c fails for every c", "the step needs cn + n <= cn, which never holds"], "answer": 3, "explanation": "Assuming T(k) <= ck gives T(n) <= 2c(n/2) + n = cn + n, and cn + n <= cn is impossible."}, {"module": "Module 1 (Foundations)", "chapter": 4, "type": "loop-count", "difficulty": "hard", "question": "For T(n) = aT(n/b) + f(n), the recursion tree has how many leaves?", "options": ["n^a", "b^{log_a n}", "a * n", "a^{log_b n} = n^{log_b a}"], "answer": 3, "explanation": "Depth log_b n with branching factor a: a^{log_b n} leaves."}, {"module": "Module 1 (Foundations)", "chapter": 4, "type": "loop-count", "difficulty": "medium", "question": "The recursion tree for T(n) = 2T(n/2) + Θ(n) has how many levels down to T(1)?", "options": ["2n", "lg lg n", "floor(lg n) + 1", "n"], "answer": 2, "explanation": "Each level halves n; after floor(lg n) halvings we reach constant size."}, {"module": "Module 1 (Foundations)", "chapter": 4, "type": "recurrence", "difficulty": "medium", "question": "Solve T(n) = T(n-1) + c for constant c > 0.", "options": ["Θ(log n)", "Θ(n)", "Θ(n^2)", "Θ(1)"], "answer": 1, "explanation": "Unrolling adds c exactly n times."}, {"module": "Module 1 (Foundations)", "chapter": 4, "type": "recurrence", "difficulty": "hard", "question": "Solve T(n) = 2T(n/2) + n log n.", "options": ["the master method does not apply", "Θ(n log^2 n)", "Θ(n^2)", "Θ(n log n)"], "answer": 1, "explanation": "Master case 2 with k = 1: f(n) = Θ(n^{log_b a} log^k n) gives Θ(n log^{k+1} n)."}, {"module": "Module 1 (Foundations)", "chapter": 5, "type": "proof", "difficulty": "hard", "question": "In the birthday-paradox analysis, Pr[no match] is a product of terms (1 - i/n). The step using 1 - x <= e^{-x} serves to…", "options": ["convert the product into e^{-k(k-1)/2n}, a clean exponential bound", "show the probability is exactly 1/2 at k = 23", "prove the birthdays are independent", "set n = 365"], "answer": 0, "explanation": "The inequality turns the product into an exponential of the sum of i/n = k(k-1)/2n."}, {"module": "Module 1 (Foundations)", "chapter": 5, "type": "behavior", "difficulty": "medium", "question": "With n = 365 days, how many people make a shared birthday more likely than not?", "options": ["183", "366", "23", "100"], "answer": 2, "explanation": "The book's analysis: at k = 23 the no-match probability first drops below 1/2."}, {"module": "Module 1 (Foundations)", "chapter": 5, "type": "definition", "difficulty": "medium", "question": "In the hiring analysis, E[sum X_i] = sum E[X_i] is valid although hires are dependent, because…", "options": ["it holds only for indicator variables", "dependence disappears as n grows", "the indicators X_i are actually independent", "linearity of expectation assumes nothing about independence"], "answer": 3, "explanation": "Linearity of expectation is the rare tool that needs no independence."}, {"module": "Module 1 (Foundations)", "chapter": 5, "type": "complexity", "difficulty": "medium", "question": "Coupon collector: the expected number of trials to collect all b types is…", "options": ["b * H_b = b ln b + O(b)", "b^2", "exactly b log b", "Θ(b)"], "answer": 0, "explanation": "Sum of geometric waiting times: b/1 + b/2 + ... + b/b."}, {"module": "Module 1 (Foundations)", "chapter": 5, "type": "definition", "difficulty": "medium", "question": "'Expected running time' of a randomized algorithm differs from 'average-case running time' because…", "options": ["they are the same concept", "the expectation is over the algorithm's own coins, not over an input distribution", "average-case needs no probability at all", "expected time is always smaller"], "answer": 1, "explanation": "Randomized analysis fixes an arbitrary input and averages over random choices."}, {"module": "Module 2 (Sorting and Order Statistics)", "chapter": 6, "type": "proof", "difficulty": "hard", "question": "The O(n) proof of BUILD-MAX-HEAP bounds the sum over heights h of (n/2^{h+1}) * O(h). The sum is linear because…", "options": ["MAX-HEAPIFY costs O(1) on average", "node counts shrink geometrically with height while per-node cost grows only linearly", "only the leaves matter", "the sum has only lg n terms"], "answer": 1, "explanation": "Sum h/2^h converges: exponentially many nodes sit at small heights."}, {"module": "Module 2 (Sorting and Order Statistics)", "chapter": 6, "type": "loop-count", "difficulty": "hard", "question": "MAX-HEAPIFY's worst case satisfies T(n) <= T(2n/3) + Θ(1). The 2n/3 arises when…", "options": ["the bottom level is exactly half full, maximizing one child's subtree", "the heap always splits into equal halves", "each call discards a third of the height", "2n/3 of the nodes are leaves"], "answer": 0, "explanation": "A half-full bottom level packs the most nodes into one subtree: at most ceil(2n/3)."}, {"module": "Module 2 (Sorting and Order Statistics)", "chapter": 6, "type": "loop-count", "difficulty": "medium", "question": "HEAPSORT's main sorting loop calls MAX-HEAPIFY…", "options": ["n log n times", "2n times", "n - 1 times", "floor(n/2) times"], "answer": 2, "explanation": "Once per extraction, for i = n down to 2."}, {"module": "Module 2 (Sorting and Order Statistics)", "chapter": 6, "type": "proof", "difficulty": "medium", "question": "MAX-HEAPIFY's loop invariant: at the start of each iteration…", "options": ["the children of i root max-heaps; only i itself may violate the property", "A[i] is the largest of the three nodes", "the heap size strictly decreases", "the whole array is already a max-heap"], "answer": 0, "explanation": "The invariant pinpoints the single violator as it sifts down."}, {"module": "Module 2 (Sorting and Order Statistics)", "chapter": 6, "type": "complexity", "difficulty": "medium", "question": "The running time of BUILD-MAX-HEAP on an array that is already a max-heap is still…", "options": ["Θ(n)", "Θ(1)", "Θ(log n)", "Θ(n log n)"], "answer": 0, "explanation": "It still visits all floor(n/2) internal nodes; each MAX-HEAPIFY just does O(1) work."}, {"module": "Module 2 (Sorting and Order Statistics)", "chapter": 7, "type": "proof", "difficulty": "hard", "question": "In RANDOMIZED-QUICKSORT's analysis, E[X_{ij}] = 2/(j-i+1) for sorted elements z_i < z_j, because…", "options": ["each pair is compared with probability 1/2", "z_i and z_j are compared iff one is chosen as pivot before any of z_i..z_j", "every pair is compared exactly once", "the pivot is always the median of the subarray"], "answer": 1, "explanation": "Among z_i..z_j, the first chosen as pivot decides: 2 favorable out of j-i+1."}, {"module": "Module 2 (Sorting and Order Statistics)", "chapter": 7, "type": "loop-count", "difficulty": "hard", "question": "A key lemma: in QUICKSORT, any pair of elements is compared…", "options": ["only if adjacent in sorted order", "at most once - only if one is the pivot while both share a subarray", "exactly once", "Θ(log n) times on average"], "answer": 1, "explanation": "After their first comparison one becomes the pivot and they separate forever."}, {"module": "Module 2 (Sorting and Order Statistics)", "chapter": 7, "type": "loop-count", "difficulty": "hard", "question": "The expected number of comparisons in RANDOMIZED-QUICKSORT is the double sum of 2/(j-i+1). This sum is…", "options": ["Θ(n)", "Θ(n log^2 n)", "Θ(n^2)", "O(n log n) - bounded by 2n * H_n"], "answer": 3, "explanation": "Substituting k = j-i gives less than sum_i sum_{k<=n} 2/k = 2n * H_n."}, {"module": "Module 2 (Sorting and Order Statistics)", "chapter": 7, "type": "recurrence", "difficulty": "hard", "question": "Even with a 9-to-1 split every time, T(n) = T(9n/10) + T(n/10) + Θ(n) solves to…", "options": ["Θ(n log n)", "Ω(n^2)", "Θ(n^2)", "Θ(n)"], "answer": 0, "explanation": "Longest root-to-leaf path is log_{10/9} n; each level costs at most cn."}, {"module": "Module 2 (Sorting and Order Statistics)", "chapter": 7, "type": "loop-count", "difficulty": "medium", "question": "On a subarray of size n, PARTITION's main for loop iterates…", "options": ["n/2 times", "n times", "log n times", "n - 1 times"], "answer": 3, "explanation": "j runs from p to r-1."}, {"module": "Module 2 (Sorting and Order Statistics)", "chapter": 7, "type": "behavior", "difficulty": "medium", "question": "RANDOMIZED-QUICKSORT's expected Θ(n log n) holds for every input because…", "options": ["the input is randomly permuted first", "random pivots always land near the median", "no input can ever trigger Θ(n^2)", "random pivots make the split distribution independent of input order"], "answer": 3, "explanation": "Randomness is in the algorithm, so no fixed input is adversarial in expectation."}, {"module": "Module 2 (Sorting and Order Statistics)", "chapter": 8, "type": "proof", "difficulty": "hard", "question": "In the BUCKET-SORT analysis, E[n_i^2] = 2 - 1/n. The cross terms E[X_{ij} * X_{ik}] = 1/n^2 for j != k because…", "options": ["X_{ij} and X_{ik} are mutually exclusive", "linearity of expectation applies to products", "distinct elements fall into buckets independently", "each bucket holds exactly one element"], "answer": 2, "explanation": "Independence of trials factorizes the joint probability to (1/n) * (1/n)."}, {"module": "Module 2 (Sorting and Order Statistics)", "chapter": 8, "type": "complexity", "difficulty": "medium", "question": "In COUNTING-SORT, the two loops that scan the input array contribute…", "options": ["Θ(n log k)", "Θ(n) total", "Θ(nk)", "Θ(n + k) each"], "answer": 1, "explanation": "Each scans exactly n elements; the Θ(k) work lives in the counting loops."}, {"module": "Module 2 (Sorting and Order Statistics)", "chapter": 8, "type": "behavior", "difficulty": "medium", "question": "RADIX-SORT's digit sort must be stable because…", "options": ["unstable sorts need Ω(n log n)", "stability improves the running time", "COUNTING-SORT is the only choice", "equal digits must keep the order set by less significant digits"], "answer": 3, "explanation": "Stability is what lets each pass refine, not scramble, previous passes."}, {"module": "Module 2 (Sorting and Order Statistics)", "chapter": 9, "type": "loop-count", "difficulty": "hard", "question": "Finding the second smallest takes n + ceil(lg n) - 2 comparisons. The ceil(lg n) - 1 extra comparisons are spent…", "options": ["re-examining only the ceil(lg n) elements that lost directly to the minimum", "running SELECT a second time", "sorting the entire array", "comparing every pair of elements"], "answer": 0, "explanation": "Tournament: n-1 to crown the min, then the min's ceil(lg n) victims play off."}, {"module": "Module 2 (Sorting and Order Statistics)", "chapter": 9, "type": "proof", "difficulty": "hard", "question": "With groups of 7, SELECT obeys T(n) <= T(n/7) + T(5n/7 + 8) + O(n). The 5n/7 + 8 comes from…", "options": ["at least 2n/7 - 8 elements are guaranteed greater than the pivot", "each group contributes exactly 7 elements", "the pivot always splits the array in half", "the median of medians is the true median"], "answer": 0, "explanation": "At least half the groups contribute 4 elements each above the pivot."}, {"module": "Module 2 (Sorting and Order Statistics)", "chapter": 9, "type": "loop-count", "difficulty": "medium", "question": "In deterministic SELECT, finding all ceil(n/5) group medians by insertion sort costs…", "options": ["Θ(n/5)", "Θ(n log n)", "Θ(n^2)", "Θ(n)"], "answer": 3, "explanation": "Θ(1) work per group times Θ(n) groups."}, {"module": "Module 3 (Advanced Design and Analysis Techniques)", "chapter": 15, "type": "loop-count", "difficulty": "hard", "question": "MATRIX-CHAIN-ORDER's nested loops (l, i, k) total Θ(n^3) because…", "options": ["the k-loop is Θ(1) amortized", "the k-loop runs l-1 times and the sum over l, i of (l-1) is Θ(n^3)", "each of the three loops runs n times", "there are n^3 subproblems"], "answer": 1, "explanation": "Θ(n^2) subproblems times Θ(n) split choices each."}, {"module": "Module 3 (Advanced Design and Analysis Techniques)", "chapter": 15, "type": "loop-count", "difficulty": "medium", "question": "LCS-LENGTH on strings of lengths m and n fills a table of…", "options": ["2^{m+n} entries", "m + n entries", "mn/2 entries", "(m+1)(n+1) entries"], "answer": 3, "explanation": "One entry per pair of prefixes, including the empty prefixes."}, {"module": "Module 3 (Advanced Design and Analysis Techniques)", "chapter": 15, "type": "proof", "difficulty": "hard", "question": "The matrix-chain optimal-substructure proof uses cut-and-paste with the cost formula q = m[i,k] + m[k+1,j] + p_{i-1} p_k p_j to show…", "options": ["the greedy split is optimal", "a cheaper sub-parenthesization would yield a cheaper full parenthesization - contradiction", "parenthesizations are counted by Catalan numbers", "induction on matrix dimensions suffices alone"], "answer": 1, "explanation": "Replacing a suboptimal piece strictly lowers the total, contradicting optimality."}, {"module": "Module 3 (Advanced Design and Analysis Techniques)", "chapter": 15, "type": "behavior", "difficulty": "medium", "question": "Prices [1, 5, 8, 9] for lengths 1-4. Greedy 'take the highest-price piece first' on length 4 gives $9, but the optimum is…", "options": ["$9 - greedy is optimal here", "$10 (two length-2 pieces)", "$7 (2 + 1 + 1)", "$9 (3 + 1)"], "answer": 1, "explanation": "Greedy grabs the length-4 piece ($9); two length-2 pieces give $5 + $5 = $10."}, {"module": "Module 3 (Advanced Design and Analysis Techniques)", "chapter": 15, "type": "complexity", "difficulty": "medium", "question": "MEMOIZED-CUT-ROD on length n solves how many distinct subproblems?", "options": ["2^n", "n^2", "n + 1 (lengths 0..n), each exactly once", "n!"], "answer": 2, "explanation": "Memoization collapses the exponential recursion onto n+1 distinct lengths."}, {"module": "Module 3 (Advanced Design and Analysis Techniques)", "chapter": 15, "type": "definition", "difficulty": "medium", "question": "Merge sort has optimal substructure, yet DP gives it no speedup. DP additionally requires…", "options": ["a polynomial number of subproblems", "optimal substructure of every prefix", "the greedy-choice property", "overlapping subproblems - the same ones recurring many times"], "answer": 3, "explanation": "Merge sort's subproblems are disjoint; DP only pays off when they overlap."}, {"module": "Module 3 (Advanced Design and Analysis Techniques)", "chapter": 16, "type": "proof", "difficulty": "hard", "question": "In the ACTIVITY-SELECTOR exchange argument, let A be optimal with earliest-starting activity a_j. Swapping a_j for the greedy choice a_1 (earliest finish) preserves optimality because…", "options": ["all activities have equal weight", "a_1 finishes no later than a_j, so it conflicts with nothing a_j didn't already conflict with", "a_1 starts earliest of all", "activities are sorted by start time"], "answer": 1, "explanation": "f_1 <= f_j keeps the swapped set feasible and the same size."}, {"module": "Module 3 (Advanced Design and Analysis Techniques)", "chapter": 16, "type": "proof", "difficulty": "hard", "question": "Huffman's Lemma 16.2: for the two least frequent characters x, y, some optimal code has them as siblings at maximum depth. The proof…", "options": ["deletes x and y from the alphabet", "swaps x with a deepest leaf a; cost never rises since f_x <= f_a", "uses induction on code length", "gives x, y the shortest codewords"], "answer": 1, "explanation": "Exchange increases depth only for characters no more frequent than x."}, {"module": "Module 3 (Advanced Design and Analysis Techniques)", "chapter": 16, "type": "complexity", "difficulty": "medium", "question": "HUFFMAN on n characters performs how many EXTRACT-MIN operations?", "options": ["n", "2(n-1)", "n - 1", "n log n"], "answer": 1, "explanation": "n-1 merges times 2 extractions per merge."}, {"module": "Module 3 (Advanced Design and Analysis Techniques)", "chapter": 16, "type": "behavior", "difficulty": "hard", "question": "Items (10 lb, $60), (20 lb, $100), (30 lb, $120), capacity 50. Greedy by value density gets $160, but the optimum is…", "options": ["$160 - greedy is optimal here", "$180 (items 1 and 3)", "$220 (items 2 and 3)", "$280 (all three, ignoring capacity)"], "answer": 2, "explanation": "Densities 6, 5, 4: greedy takes items 1+2 ($160); items 2+3 fit exactly ($220)."}, {"module": "Module 3 (Advanced Design and Analysis Techniques)", "chapter": 16, "type": "behavior", "difficulty": "medium", "question": "Greedy by density is optimal for FRACTIONAL knapsack. The exchange argument works there because…", "options": ["fractions equalize all densities", "DP cannot handle fractions", "taking a fraction of an item never breaks feasibility", "the 0-1 constraint is irrelevant"], "answer": 2, "explanation": "Divisibility lets the greedy choice fill remaining capacity exactly."}, {"module": "Module 4 (Graph Algorithms)", "chapter": 22, "type": "proof", "difficulty": "hard", "question": "TOPOLOGICAL-SORT emits vertices in decreasing finish time. For edge (u,v) in a DAG, f[u] > f[v] because when (u,v) is explored…", "options": ["v is always still white", "v cannot be gray (that would close a cycle); it is white (a descendant) or black (finished)", "finish times equal discovery times in DAGs", "u is always discovered first"], "answer": 1, "explanation": "Gray v would be a back edge - impossible in a DAG - so f[v] < f[u] either way."}, {"module": "Module 4 (Graph Algorithms)", "chapter": 22, "type": "loop-count", "difficulty": "medium", "question": "Over a full DFS, the loop scanning Adj[u] executes how many iterations in total?", "options": ["Θ(V + E) per vertex", "Θ(VE)", "Θ(E)", "Θ(V)"], "answer": 2, "explanation": "Each adjacency list is scanned once: the sum of |Adj[v]| is Θ(E)."}, {"module": "Module 4 (Graph Algorithms)", "chapter": 22, "type": "proof", "difficulty": "hard", "question": "In undirected DFS, every edge is tree or back - never forward or cross - because…", "options": ["DFS never sees cross edges in any graph", "undirected graphs are acyclic", "forward edges are renamed to back edges", "the edge is classified when first examined: from the first-discovered endpoint the other end is still white (tree edge), and from the other end the first-discovered endpoint is a gray ancestor (back edge)"], "answer": 3, "explanation": "An undirected edge is classified the first time either endpoint examines it. If the other endpoint is still undiscovered it becomes a tree edge; otherwise that endpoint is already an ancestor being explored, so the edge is a back edge. Forward and cross edges can never arise."}, {"module": "Module 4 (Graph Algorithms)", "chapter": 22, "type": "behavior", "difficulty": "medium", "question": "The SCC algorithm runs its second DFS on G^T (not G) because…", "options": ["no edges then leave the current SCC toward unprocessed ones, keeping each DFS tree inside one SCC", "DFS requires undirected graphs", "to reverse the finish-time order", "G^T has fewer edges"], "answer": 0, "explanation": "Transposing flips inter-component edges so each tree cannot escape its component."}, {"module": "Module 4 (Graph Algorithms)", "chapter": 22, "type": "behavior", "difficulty": "medium", "question": "In BFS, each vertex is enqueued and dequeued…", "options": ["Θ(V) times in the worst case", "exactly deg(v) times", "at most once each", "once per neighbor"], "answer": 2, "explanation": "The color test (white to gray) admits each vertex to the queue a single time."}, {"module": "Module 4 (Graph Algorithms)", "chapter": 23, "type": "proof", "difficulty": "hard", "question": "Cut-property proof: T is an MST, e a light edge crossing cut (S, V-S) with e not in T. T + e contains a cycle; the proof then…", "options": ["drops e again", "drops a crossing edge e' with w(e') >= w(e), keeping a spanning tree of no greater weight", "adds every light edge at once", "concludes T was not minimal"], "answer": 1, "explanation": "Swapping in the light edge cannot increase weight - so some MST contains e."}, {"module": "Module 4 (Graph Algorithms)", "chapter": 23, "type": "complexity", "difficulty": "medium", "question": "In PRIM with a binary heap, DECREASE-KEY is called at most…", "options": ["E log V times", "once per MST edge", "once per edge - O(E) times total", "once per vertex"], "answer": 2, "explanation": "Each adjacency scan can lower a key at most once per edge."}, {"module": "Module 4 (Graph Algorithms)", "chapter": 23, "type": "complexity", "difficulty": "medium", "question": "KRUSKAL calls FIND-SET how many times?", "options": ["once per vertex", "|E| times", "|V| times", "2 per edge examined (2|E| total)"], "answer": 3, "explanation": "Both endpoints of every considered edge are looked up."}, {"module": "Module 4 (Graph Algorithms)", "chapter": 23, "type": "complexity", "difficulty": "hard", "question": "What is the asymptotically tight bound for PRIM with a Fibonacci heap?", "options": ["O(V^2 + E)", "O(E + V log V)", "Θ(V^2)", "O(E log V)"], "answer": 1, "explanation": "O(1) amortized DECREASE-KEY leaves only the V EXTRACT-MINs at log cost."}, {"module": "Module 4 (Graph Algorithms)", "chapter": 24, "type": "proof", "difficulty": "hard", "question": "DIJKSTRA's proof: when u leaves the queue, suppose a shorter path p exists; let y be p's first vertex outside S. Nonnegativity gives delta(s,y) <= delta(s,u), and since d[y] = delta(s,y) >= d[u]…", "options": ["d[y] < d[x] must hold", "p cannot contain u", "y must equal u", "d[u] = delta(s,u) follows - the supposedly shorter path cannot beat d[u]"], "answer": 3, "explanation": "Chaining delta(s,y) <= delta(s,u) <= d[u] <= d[y] = delta(s,y) collapses everything to equality."}, {"module": "Module 4 (Graph Algorithms)", "chapter": 24, "type": "behavior", "difficulty": "hard", "question": "Edges s->a (3), s->t (2), a->t (-2). DIJKSTRA from s reports d[t] = 2, but the truth is…", "options": ["-1 by looping a->t twice", "2 - Dijkstra is correct here", "1 via s->a->t; t was extracted before a settled", "3 via s->a"], "answer": 2, "explanation": "t (d=2) leaves the queue before a (d=3) is processed, missing the -2 shortcut."}, {"module": "Module 4 (Graph Algorithms)", "chapter": 24, "type": "complexity", "difficulty": "medium", "question": "DIJKSTRA with a binary heap calls EXTRACT-MIN…", "options": ["V log V times", "exactly V times", "E times", "once"], "answer": 1, "explanation": "One extraction per vertex, no matter the graph."}, {"module": "Module 4 (Graph Algorithms)", "chapter": 24, "type": "proof", "difficulty": "hard", "question": "BELLMAN-FORD's invariant: after pass i, d[v] <= the cheapest s-to-v path using at most i edges. The induction step holds because…", "options": ["relaxing every edge in pass i+1 extends each i-edge shortest path by one edge", "each pass halves the remaining error", "d values change at most V times", "negative weights are skipped after pass i"], "answer": 0, "explanation": "A shortest (i+1)-edge path is an i-edge shortest path plus one final relaxation."}, {"module": "Module 4 (Graph Algorithms)", "chapter": 24, "type": "behavior", "difficulty": "medium", "question": "Single-source shortest paths on a DAG need how many relaxation passes in topological order?", "options": ["until no d changes", "one", "|E|", "|V| - 1"], "answer": 1, "explanation": "Every edge goes forward, so one left-to-right pass settles all distances."}, {"module": "Module 5 (Selected Topics)", "chapter": 26, "type": "behavior", "difficulty": "medium", "question": "The O(E * |f*|) bound for FORD-FULKERSON assumes…", "options": ["integer (integral) capacities", "a complete graph", "unit capacities", "BFS augmentations"], "answer": 0, "explanation": "Each augmentation then raises flow by at least 1; irrational capacities can even prevent termination."}, {"module": "Module 5 (Selected Topics)", "chapter": 31, "type": "proof", "difficulty": "hard", "question": "EUCLID's correctness rests on gcd(a, b) = gcd(b, a mod b). This holds because…", "options": ["Fibonacci numbers are the worst case", "a mod b < b always", "the recursion must terminate", "every common divisor of a and b also divides a mod b = a - floor(a/b)*b, and vice versa"], "answer": 3, "explanation": "Divisibility is preserved in both directions, so the gcd is unchanged."}, {"module": "Module 5 (Selected Topics)", "chapter": 32, "type": "complexity", "difficulty": "medium", "question": "The amortized argument for COMPUTE-PREFIX-FUNCTION, whose running time is Θ(m), is…", "options": ["the inner while runs once per q", "pi[q] < q always holds", "k rises at most m-1 times total, bounding all later decreases", "each iteration is O(1) worst case"], "answer": 2, "explanation": "Potential = k: total falls cannot exceed total rises."}, {"module": "Module 6 (NP-Completeness)", "chapter": 34, "type": "proof", "difficulty": "medium", "question": "In the 3-CNF-SAT <=p CLIQUE reduction, edges connect…", "options": ["only contradictory literals", "literals within the same clause", "literals in different clauses that do not contradict; a k-clique picks one true literal per clause", "every pair of vertices"], "answer": 2, "explanation": "A k-clique must take exactly one literal per clause with no contradictions - a satisfying assignment."}, {"module": "Module 6 (NP-Completeness)", "chapter": 34, "type": "definition", "difficulty": "medium", "question": "A polynomial-time verifier V for language L satisfies…", "options": ["V takes time polynomial in |c| only", "V decides L with no certificate", "the certificate c must be unique", "x in L iff some certificate c makes V(x, c) accept in poly(|x|) time"], "answer": 3, "explanation": "NP = existence of short, efficiently checkable certificates."}, {"module": "Module 6 (NP-Completeness)", "chapter": 34, "type": "definition", "difficulty": "medium", "question": "An NP-hard problem not known to be in NP (like HALTING)…", "options": ["is automatically NP-complete", "cannot be NP-complete - completeness requires membership in NP", "must be in P", "has no verifier at all"], "answer": 1, "explanation": "NP-complete = NP-hard intersect NP; dropping the second condition leaves only hardness."}, {"module": "Module 6 (NP-Completeness)", "chapter": 34, "type": "behavior", "difficulty": "hard", "question": "HAM-CYCLE <=p TSP: from G = (V,E) build a complete graph with cost 0 on E-edges, 1 elsewhere; ask for tour cost <= 0. This works because…", "options": ["TSP is easier than HAM-CYCLE", "a cost-0 tour uses only E-edges (a Hamiltonian cycle), and vice versa", "the reduction itself needs |V|! time", "cost-1 edges are never usable"], "answer": 1, "explanation": "Cost 0 is achievable exactly when G has a Hamiltonian cycle."}, {"module": "Module 6 (NP-Completeness)", "chapter": 34, "type": "proof", "difficulty": "hard", "question": "To prove B is NP-hard given that A is NP-complete, the correct direction is…", "options": ["B <=p B", "A <=p B - reduce the known hard problem TO the new one", "either direction works", "B <=p A"], "answer": 1, "explanation": "Hardness flows forward along reductions: A hard implies B at least as hard."}, {"module": "Module 6 (NP-Completeness)", "chapter": 34, "type": "proof", "difficulty": "hard", "question": "A is NP-complete and A <=p B. What can we conclude about B?", "options": ["B is NP-hard, though B may lie outside NP", "B is NP-complete", "A is in P", "B is in P"], "answer": 0, "explanation": "Hardness propagates forward; completeness additionally requires B in NP."}];
+/* ================= DATA ================= */
+const MODULES = [
+  {id:"m1", name:"Module 1", desc:"Foundations", chapters:[2,3,4,5]},
+  {id:"m2", name:"Module 2", desc:"Sorting and Order Statistics", chapters:[6,7,8,9]},
+  {id:"m3", name:"Module 3", desc:"Advanced Design and Analysis", chapters:[15,16]},
+  {id:"m4", name:"Module 4", desc:"Graph Algorithms", chapters:[22,23,24]},
+  {id:"m5", name:"Module 5", desc:"Selected Topics", chapters:[25,26,27,28,29,30,31,32,33]},
+  {id:"m6", name:"Module 6", desc:"NP-Completeness", chapters:[34]}
+];
+const SHAPES = ["\u25B2","\u25C6","\u25CF","\u25A0"]; // triangle diamond circle square
+const BTN_COLORS = ["#e21b3c","#1368ce","#d89e00","#26890c"];
+const LETTERS = ["A","B","C","D"];
+const ANSWER_TIME = 15; // seconds to answer after buzzing in
+
+function modOf(ch){
+  if(ch === 0) return {id:"custom", name:"My Questions", desc:"Custom import"};
+  for(const m of MODULES){ if(m.chapters.includes(ch)) return m; }
+  return {id:"m?", name:"Module ?", desc:""};
+}
+const CUSTOM_KEY = "clrs-battle-custom";
+const REPORT_KEY = "clrs-battle-reports";
+function getCustom(){ return store.get(CUSTOM_KEY, []); }
+function allModules(){
+  const ms = MODULES.slice();
+  if(getCustom().length) ms.push({id:"custom", name:"My Questions", desc:"Custom import", chapters:[0]});
+  return ms;
+}
+function allQuestions(){ return QUESTION_BANK.concat(getCustom()); }
+function countFor(modIds){
+  return allQuestions().filter(q => modIds.some(id => modOf(q.chapter).id === id)).length;
+}
+function shuffle(a){
+  a = a.slice();
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+function $(id){ return document.getElementById(id); }
+function show(id){
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  $(id).classList.add("active");
+  window.scrollTo(0,0);
+}
+
+/* ================= STORAGE ================= */
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v===null?d:JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+
+/* ================= SETUP ================= */
+const cfg = { mode:"solo", modules:["m1","m2","m3","m4"], difficulty:"medium", count:10, time:20, scoring:"time" };
+
+function buildModuleGrid(){
+  const grid = $("mod-grid"); grid.innerHTML = "";
+  allModules().forEach(m => {
+    const n = allQuestions().filter(q => m.chapters.includes(q.chapter)).length;
+    const div = document.createElement("div");
+    div.className = "mod" + (cfg.modules.includes(m.id) ? " selected" : "");
+    div.innerHTML =
+      '<input type="checkbox" ' + (cfg.modules.includes(m.id) ? "checked" : "") + '>' +
+      '<div><div class="mod-name">' + m.name + (m.id === "custom" ? "" : " · " + m.desc) + '</div>' +
+      '<div class="mod-meta">' + (m.id === "custom" ? "Imported by you" : "Ch " + m.chapters.join(", ")) + " · " + n + " questions</div></div>";
+    div.addEventListener("click", e => {
+      if(e.target.tagName !== "INPUT"){
+        const cb = div.querySelector("input"); cb.checked = !cb.checked;
+      }
+      const cb = div.querySelector("input");
+      if(cb.checked){ if(!cfg.modules.includes(m.id)) cfg.modules.push(m.id); }
+      else{ cfg.modules = cfg.modules.filter(x => x !== m.id); }
+      div.classList.toggle("selected", cb.checked);
+      validateStart();
+    });
+    grid.appendChild(div);
+  });
+}
+function pillRow(id, key, parse){
+  const row = $(id);
+  row.querySelectorAll(".pill").forEach(p => {
+    p.addEventListener("click", () => {
+      row.querySelectorAll(".pill").forEach(x => x.classList.remove("selected"));
+      p.classList.add("selected");
+      cfg[key] = parse ? parse(p.dataset.v) : p.dataset.v;
+      validateStart();
+    });
+  });
+}
+function setMode(mode){
+  cfg.mode = mode;
+  $("mode-solo").classList.toggle("selected", mode === "solo");
+  $("mode-battle").classList.toggle("selected", mode === "battle");
+  $("wrap-p2").classList.toggle("hidden", mode !== "battle");
+  $("btn-start").textContent = mode === "battle" ? "Start Battle" : "Start Quiz";
+  const p = store.get("clrs-battle-prefs", {});
+  if(p.name1) $("name-p1").value = p.name1;
+  if(p.name2) $("name-p2").value = p.name2;
+}
+function availableCount(){
+  let pool = allQuestions().filter(q => cfg.modules.includes(modOf(q.chapter).id));
+  if(cfg.difficulty !== "mixed") pool = pool.filter(q => q.difficulty === cfg.difficulty || q.chapter === 0);
+  return pool.length;
+}
+function validateStart(){
+  const ok = cfg.modules.length > 0 && availableCount() > 0;
+  $("btn-start").disabled = !ok;
+  $("btn-start").textContent = (cfg.mode === "battle" ? "Start Battle" : "Start Quiz") +
+    (ok ? " (" + Math.min(cfg.count, availableCount()) + " questions)" : " (select a module)");
+}
+
+/* ================= SESSION ================= */
+let S = null;
+function startGame(){
+  let pool = allQuestions().filter(q => cfg.modules.includes(modOf(q.chapter).id));
+  if(cfg.difficulty !== "mixed") pool = pool.filter(q => q.difficulty === cfg.difficulty || q.chapter === 0);
+  pool = shuffle(pool).slice(0, Math.min(cfg.count, pool.length));
+  const questions = pool.map(q => {
+    const order = shuffle([0,1,2,3]);
+    return { q, order, correctPos: order.indexOf(q.answer), picked: -1, by: null, points: 0, timedOut: false };
+  });
+  const p1 = ($("name-p1").value.trim() || "Player 1").slice(0,16);
+  const p2 = ($("name-p2").value.trim() || "Player 2").slice(0,16);
+  S = {
+    mode: cfg.mode, questions, idx: 0, time: cfg.time, scoring: cfg.scoring,
+    p1: {name:p1, score:0, correct:0}, p2: {name:p2, score:0, correct:0},
+    streak1: 0, streak2: 0,
+    timerId: null, deadline: 0, phase: "idle"
+  };
+  store.set("clrs-battle-prefs", {name1:p1, name2:p2});
+  show("screen-game");
+  renderQuestion();
+}
+function timePoints(elapsedMs, totalMs){
+  if(S.scoring === "count") return 1;
+  const frac = Math.max(0, Math.min(1, elapsedMs / totalMs));
+  return Math.round(500 + 500 * (1 - frac));
+}
+/* streak: consecutive correct answers earn a bonus (time-based mode) */
+function awardPoints(who, base){
+  const p = who === 1 ? S.p1 : S.p2;
+  const key = who === 1 ? "streak1" : "streak2";
+  S[key]++;
+  let bonus = 0;
+  if(S.scoring === "time" && S[key] >= 2) bonus = Math.min(100 * (S[key] - 1), 500);
+  p.score += base + bonus; p.correct++;
+  return {total: base + bonus, bonus: bonus, streak: S[key]};
+}
+function resetStreak(who){ if(who === 1) S.streak1 = 0; else S.streak2 = 0; }
+function streakTag(r){
+  return r.bonus > 0 ? ' <span class="streak-tag">(streak x' + r.streak + ' +' + r.bonus + ')</span>' : '';
+}
+function stopTimer(){
+  if(S.timerId){ clearInterval(S.timerId); S.timerId = null; }
+}
+function startTimer(seconds, onTick, onDone){
+  stopTimer();
+  if(seconds <= 0){ $("timer-track").style.visibility = "hidden"; $("q-badge").style.visibility = "hidden"; return; }
+  $("timer-track").style.visibility = "visible"; $("q-badge").style.visibility = "visible";
+  const total = seconds * 1000, t0 = Date.now();
+  S.deadline = t0 + total;
+  const fill = $("timer-fill"), badge = $("q-badge");
+  const tick = () => {
+    const left = Math.max(0, S.deadline - Date.now());
+    fill.style.width = (left / total * 100) + "%";
+    const s = Math.ceil(left / 1000);
+    badge.textContent = s;
+    const low = left < total * 0.25;
+    fill.classList.toggle("low", low); badge.classList.toggle("low", low);
+    if(onTick) onTick(left, total);
+    if(left <= 0){ stopTimer(); onDone(); }
+  };
+  S.timerId = setInterval(tick, 100); tick();
+}
+function setHud(){
+  const n = S.questions.length;
+  if(S.mode === "solo"){
+    $("hud-left").textContent = "Question " + (S.idx+1) + " / " + n;
+    $("hud-score").textContent = "Score: " + S.p1.score;
+    $("hud-score").style.background = ""; $("hud-score").style.color = "";
+  }else{
+    $("hud-left").textContent = S.p1.name + ": " + S.p1.score;
+    $("hud-score").textContent = S.p2.name + ": " + S.p2.score;
+    $("hud-score").style.background = "rgba(255,255,255,.16)";
+    $("hud-score").style.color = "#fff";
+  }
+}
+function subLabel(item){
+  if(item.q.chapter === 0) return "MY QUESTIONS";
+  const m = modOf(item.q.chapter);
+  return (m.name + " · Chapter " + item.q.chapter + " · " + cap(item.q.difficulty)).toUpperCase();
+}
+/* ---- question reports ---- */
+function getReports(){ return store.get(REPORT_KEY, []); }
+function isReported(qtext){ return getReports().some(r => r.question === qtext); }
+function reportQuestion(qtext, chapter){
+  const reps = getReports();
+  if(!reps.some(r => r.question === qtext)){
+    reps.push({question: qtext, chapter: chapter, t: Date.now()});
+    store.set(REPORT_KEY, reps);
+  }
+}
+function showReportBtn(item){
+  const b = $("btn-report");
+  b.classList.remove("hidden");
+  b.disabled = isReported(item.q.question);
+  b.textContent = b.disabled ? "Reported — thanks" : "Report an issue with this question";
+  b.onclick = () => {
+    reportQuestion(item.q.question, item.q.chapter);
+    b.disabled = true; b.textContent = "Reported — thanks";
+  };
+}
+function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+function lockAnswers(){
+  document.querySelectorAll("#answers .ans").forEach(b => b.classList.add("locked"));
+}
+function renderAnswers(item, allowedPos, clickFn){
+  const box = $("answers"); box.innerHTML = ""; box.classList.remove("hidden");
+  allowedPos.forEach(pos => {
+    const b = document.createElement("button");
+    b.className = "ans"; b.style.background = BTN_COLORS[pos];
+    const label = document.createElement("span"); label.className = "shape"; label.textContent = SHAPES[pos];
+    const txt = document.createElement("span"); txt.textContent = item.q.options[item.order[pos]];
+    b.appendChild(label); b.appendChild(txt);
+    b.addEventListener("click", () => clickFn(pos, b));
+    box.appendChild(b);
+  });
+}
+/* ================= SOLO FLOW ================= */
+function renderQuestion(){
+  const item = S.questions[S.idx];
+  setHud();
+  $("q-label").textContent = "Question " + (S.idx+1);
+  $("q-text").textContent = item.q.question;
+  $("q-sub").textContent = subLabel(item);
+  $("feedback").textContent = ""; $("feedback").className = "feedback";
+  $("explain").textContent = "";
+  const rb = $("btn-report"); rb.classList.add("hidden"); rb.disabled = false;
+  $("turn-banner").classList.add("hidden");
+  if(S.mode === "solo") soloQuestion(item);
+  else battleQuestion(item);
+}
+function soloQuestion(item){
+  $("buzz-row").classList.add("hidden"); $("buzz-hint").classList.add("hidden");
+  S.phase = "answering";
+  const t0 = Date.now();
+  renderAnswers(item, [0,1,2,3], (pos) => {
+    if(S.phase !== "answering") return;
+    S.phase = "locked"; stopTimer();
+    answerSolo(item, pos, Date.now() - t0, false);
+  });
+  startTimer(S.time, null, () => {
+    if(S.phase !== "answering") return;
+    S.phase = "locked";
+    answerSolo(item, -1, S.time*1000, true);
+  });
+}
+function answerSolo(item, pos, elapsedMs, timedOut){
+  lockAnswers();
+  const btns = document.querySelectorAll("#answers .ans");
+  btns[item.correctPos].classList.add("mark-correct");
+  const fb = $("feedback");
+  if(!timedOut && pos === item.correctPos){
+    const pts = timePoints(elapsedMs, S.time > 0 ? S.time*1000 : elapsedMs);
+    const r = awardPoints(1, pts);
+    item.points = r.total; item.picked = pos;
+    fb.innerHTML = S.scoring === "time" ? "Correct! +" + r.total + " points" + streakTag(r) : "Correct! +1 point" + streakTag(r);
+    fb.className = "feedback good";
+    if(pos !== item.correctPos) btns[pos].classList.add("mark-wrong");
+  }else{
+    resetStreak(1);
+    item.picked = pos; item.timedOut = timedOut;
+    if(pos >= 0) btns[pos].classList.add("mark-wrong");
+    fb.textContent = timedOut ? "Time's up!" : "Not quite.";
+    fb.className = "feedback bad";
+  }
+  $("explain").textContent = "Answer: " + LETTERS[item.correctPos] + ". " + item.q.explanation;
+  showReportBtn(item);
+  setHud();
+  setTimeout(nextQuestion, 3000);
+}
+
+/* ================= BATTLE FLOW ================= */
+function battleQuestion(item){
+  $("answers").classList.add("hidden"); $("answers").innerHTML = "";
+  const br = $("buzz-row"); br.classList.remove("hidden");
+  $("buzz-hint").classList.remove("hidden");
+  $("buzz-p1-name").textContent = S.p1.name;
+  $("buzz-p2-name").textContent = S.p2.name;
+  $("buzz-p1").disabled = false; $("buzz-p2").disabled = false;
+  S.phase = "buzz";
+  const t0 = Date.now();
+  startTimer(S.time, null, () => {
+    if(S.phase !== "buzz") return;
+    S.phase = "locked"; item.timedOut = true;
+    $("buzz-p1").disabled = true; $("buzz-p2").disabled = true;
+    $("buzz-row").classList.add("hidden"); $("buzz-hint").classList.add("hidden");
+    renderAnswers(item, [0,1,2,3], () => {});
+    lockAnswers();
+    document.querySelectorAll("#answers .ans")[item.correctPos].classList.add("mark-correct");
+    const fb = $("feedback"); fb.textContent = "Nobody buzzed."; fb.className = "feedback bad";
+    $("explain").textContent = "Answer: " + LETTERS[item.correctPos] + ". " + item.q.explanation;
+    setTimeout(nextQuestion, 3000);
+  });
+  $("buzz-p1").onclick = () => buzz(1, item, Date.now() - t0);
+  $("buzz-p2").onclick = () => buzz(2, item, Date.now() - t0);
+}
+function buzz(who, item, elapsedMs){
+  if(S.phase !== "buzz") return;
+  S.phase = "answering"; stopTimer();
+  // battle points reward buzz speed (fastest finger), like the live game
+  item.basePts = timePoints(elapsedMs, S.time > 0 ? S.time*1000 : elapsedMs);
+  $("buzz-p1").disabled = true; $("buzz-p2").disabled = true;
+  $("buzz-row").classList.add("hidden"); $("buzz-hint").classList.add("hidden");
+  const me = who === 1 ? S.p1 : S.p2, other = who === 1 ? S.p2 : S.p1;
+  const banner = $("turn-banner");
+  banner.textContent = me.name + " buzzed in — answer now!";
+  banner.classList.remove("hidden");
+  item.by = who;
+  const t0 = Date.now();
+  renderAnswers(item, [0,1,2,3], (pos) => {
+    if(S.phase !== "answering") return;
+    S.phase = "locked"; stopTimer();
+    lockAnswers();
+    const btns = document.querySelectorAll("#answers .ans");
+    if(pos === item.correctPos){
+      const r = awardPoints(who, item.basePts);
+      item.points = r.total; item.picked = pos;
+      btns[pos].classList.add("mark-correct");
+      const fb = $("feedback");
+      fb.innerHTML = S.scoring === "time"
+        ? "Correct! " + esc(me.name) + " +" + r.total + " points" + streakTag(r)
+        : "Correct! " + esc(me.name) + " +1 point" + streakTag(r);
+      fb.className = "feedback good";
+      $("explain").textContent = item.q.explanation;
+      showReportBtn(item);
+      banner.classList.add("hidden");
+      setHud(); setTimeout(nextQuestion, 3000);
+    }else{
+      resetStreak(who);
+      btns[pos].classList.add("mark-wrong");
+      item.picked = pos;
+      steal(item, who, me, other);
+    }
+  });
+  startTimer(ANSWER_TIME, null, () => {
+    if(S.phase !== "answering") return;
+    S.phase = "locked";
+    lockAnswers();
+    document.querySelectorAll("#answers .ans")[item.correctPos].classList.add("mark-correct");
+    item.timedOut = true;
+    const fb = $("feedback"); fb.textContent = me.name + " ran out of time."; fb.className = "feedback bad";
+    $("explain").textContent = "Answer: " + LETTERS[item.correctPos] + ". " + item.q.explanation;
+    banner.classList.add("hidden");
+    setTimeout(nextQuestion, 3000);
+  });
+}
+function steal(item, who, me, other){
+  const banner = $("turn-banner");
+  banner.textContent = me.name + " missed — " + other.name + ", steal for half points!";
+  banner.classList.remove("hidden");
+  const fb = $("feedback"); fb.textContent = ""; fb.className = "feedback";
+  S.phase = "steal";
+  const remain = [0,1,2,3].filter(p => p !== item.picked);
+  renderAnswers(item, remain, (pos) => {
+    if(S.phase !== "steal") return;
+    S.phase = "locked"; stopTimer(); lockAnswers();
+    const btns = document.querySelectorAll("#answers .ans");
+    btns[remain.indexOf(item.correctPos)].classList.add("mark-correct");
+    if(pos === item.correctPos){
+      const otherWho = who === 1 ? 2 : 1;
+      const base = S.scoring === "time" ? Math.max(250, Math.round((item.basePts || 1000)/2)) : 1;
+      const r = awardPoints(otherWho, base);
+      item.points = r.total; item.by = otherWho;
+      fb.innerHTML = "Steal! " + esc(other.name) + " +" + r.total + " points" + streakTag(r);
+      fb.className = "feedback good";
+    }else{
+      resetStreak(who === 1 ? 2 : 1);
+      if(pos !== item.correctPos){
+        const idx = remain.indexOf(pos);
+        if(idx >= 0) btns[idx].classList.add("mark-wrong");
+      }
+      fb.textContent = "No steal.";
+      fb.className = "feedback bad";
+    }
+    $("explain").textContent = "Answer: " + LETTERS[item.correctPos] + ". " + item.q.explanation;
+    showReportBtn(item);
+    banner.classList.add("hidden");
+    setHud(); setTimeout(nextQuestion, 3000);
+  });
+  startTimer(ANSWER_TIME, null, () => {
+    if(S.phase !== "steal") return;
+    S.phase = "locked"; lockAnswers();
+    const btns2 = document.querySelectorAll("#answers .ans");
+    btns2[remain.indexOf(item.correctPos)].classList.add("mark-correct");
+    const fb = $("feedback"); fb.textContent = "No steal — time's up."; fb.className = "feedback bad";
+    $("explain").textContent = "Answer: " + LETTERS[item.correctPos] + ". " + item.q.explanation;
+    banner.classList.add("hidden");
+    setTimeout(nextQuestion, 3000);
+  });
+}
+function nextQuestion(){
+  stopTimer();
+  S.idx++;
+  if(S.idx >= S.questions.length) showResults();
+  else renderQuestion();
+}
+
+/* ================= RESULTS ================= */
+function showResults(){
+  stopTimer(); S.phase = "done";
+  show("screen-results");
+  const n = S.questions.length;
+  const body = $("results-body"); body.innerHTML = "";
+  const hist = store.get("clrs-battle-history", []);
+  if(S.mode === "solo"){
+    const c = S.p1.correct, acc = n ? Math.round(c/n*100) : 0;
+    let title = "Keep practicing!";
+    if(acc === 100) title = "Perfect score!";
+    else if(acc >= 80) title = "Great run!";
+    else if(acc >= 60) title = "Nice work!";
+    $("result-sub").textContent = S.p1.name + " · " + n + " questions";
+    body.innerHTML =
+      '<div class="result-title">' + title + '</div>' +
+      '<div class="big-score">' + S.p1.score + '</div>' +
+      '<div class="stat-row">' +
+      stat(c, "Correct") + stat(n - c, "Wrong") + stat(acc + "%", "Accuracy") +
+      '</div>' + modReport([{name:S.p1.name, correct:c}]) + reviewList();
+    hist.push({t:Date.now(), mode:"solo", score:S.p1.score, n, acc});
+  }else{
+    const w = S.p1.score === S.p2.score ? null : (S.p1.score > S.p2.score ? S.p1 : S.p2);
+    $("result-sub").textContent = n + " questions · buzz battle";
+    const acc1 = n ? Math.round(S.p1.correct/n*100) : 0;
+    const acc2 = n ? Math.round(S.p2.correct/n*100) : 0;
+    body.innerHTML =
+      '<div class="winner-banner">' + (w ? w.name + " wins!" : "It's a tie!") + '</div>' +
+      '<div class="vs-score">' +
+      '<div class="vs-card' + (w === S.p1 ? " winner" : "") + '"><div class="pn">' + esc(S.p1.name) + '</div><div class="ps">' + S.p1.score + '</div><div class="q-sub">' + S.p1.correct + "/" + n + " correct · " + acc1 + "%</div></div>" +
+      '<div class="vs-card' + (w === S.p2 ? " winner" : "") + '"><div class="pn">' + esc(S.p2.name) + '</div><div class="ps">' + S.p2.score + '</div><div class="q-sub">' + S.p2.correct + "/" + n + " correct · " + acc2 + "%</div></div>" +
+      '</div>' + reviewList();
+    hist.push({t:Date.now(), mode:"battle", p1:S.p1.score, p2:S.p2.score, n});
+  }
+  body.innerHTML += resultsExtra();
+  wireResultsExtra();
+  store.set("clrs-battle-history", hist.slice(-20));
+}
+function stat(v, k){ return '<div class="stat"><div class="v">' + v + '</div><div class="k">' + k + '</div></div>'; }
+function retryMissed(){
+  const missed = S.questions.filter(q => q.points === 0).map(it => {
+    const order = shuffle([0,1,2,3]);
+    return {q: it.q, order: order, correctPos: order.indexOf(it.q.answer), picked: -1, by: null, points: 0, timedOut: false};
+  });
+  if(!missed.length) return;
+  S = {
+    mode: S.mode, questions: missed, idx: 0, time: S.time, scoring: S.scoring,
+    p1: {name: S.p1.name, score: 0, correct: 0}, p2: {name: S.p2.name, score: 0, correct: 0},
+    streak1: 0, streak2: 0, timerId: null, deadline: 0, phase: "idle"
+  };
+  show("screen-game");
+  renderQuestion();
+}
+function resultsExtra(){
+  const missed = S.questions.filter(q => q.points === 0).length;
+  const reps = getReports().length;
+  if(!missed && !reps) return "";
+  let h = '<div class="foot">';
+  if(missed) h += '<button class="btn-ghost" id="btn-retry">Retry missed (' + missed + ')</button>';
+  if(reps) h += '<button class="btn-ghost" id="btn-copy-reports">Copy issue list (' + reps + ')</button>';
+  h += '</div>';
+  return h;
+}
+function wireResultsExtra(){
+  const br = $("btn-retry");
+  if(br) br.addEventListener("click", retryMissed);
+  const bc = $("btn-copy-reports");
+  if(bc) bc.addEventListener("click", () => {
+    const txt = JSON.stringify(getReports(), null, 2);
+    const done = () => { bc.textContent = "Copied!"; bc.disabled = true; };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done).catch(() => fallbackCopy(txt, done));
+    }else fallbackCopy(txt, done);
+  });
+}
+function fallbackCopy(txt, done){
+  const ta = document.createElement("textarea");
+  ta.value = txt; document.body.appendChild(ta); ta.select();
+  try{ document.execCommand("copy"); done(); }catch(e){}
+  document.body.removeChild(ta);
+}
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function modReport(){
+  const byMod = {};
+  S.questions.forEach(it => {
+    const m = modOf(it.q.chapter);
+    byMod[m.id] = byMod[m.id] || {m, t:0, c:0};
+    byMod[m.id].t++;
+    if(it.points > 0) byMod[m.id].c++;
+  });
+  let h = '<h2 class="sec">Report card — by module</h2>';
+  Object.values(byMod).forEach(({m, t, c}) => {
+    const pct = t ? Math.round(c/t*100) : 0;
+    h += '<div class="modbar"><div class="lbl"><span>' + m.name + " · " + m.desc + '</span><span>' + c + "/" + t + " · " + pct + '%</span></div>' +
+         '<div class="track"><div class="fill" style="width:' + pct + '%"></div></div></div>';
+  });
+  return h;
+}
+function reviewList(){
+  let h = '<h2 class="sec">Review</h2><div class="review">';
+  S.questions.forEach((it, i) => {
+    const youLetter = it.picked >= 0 ? LETTERS[it.picked] : null;
+    const ok = it.points > 0;
+    const who = S.mode === "battle" && it.by ? (it.by === 1 ? esc(S.p1.name) : esc(S.p2.name)) + ": " : "";
+    h += '<details class="rev"><summary>Q' + (i+1) + ": " + esc(it.q.question.slice(0,70)) + (it.q.question.length > 70 ? "…" : "") + '</summary>' +
+      '<div class="rq">' + esc(it.q.question) + '</div>' +
+      '<div class="ra">' + who +
+      (youLetter ? ('You put: <span class="' + (ok ? "you-good" : "you-bad") + '">' + youLetter + "</span> · ") : (it.timedOut ? "No answer · " : "")) +
+      "Correct: <b>" + LETTERS[it.order.indexOf(it.q.answer)] + "</b></div>" +
+      '<div class="ra">' + esc(it.q.explanation) + "</div>" +
+      '<div><button class="link-btn" data-report="' + i + '">' +
+      (isReported(it.q.question) ? "Reported" : "Report an issue with this question") +
+      "</button></div></details>";
+  });
+  return h + "</div>";
+}
+
+function importCustom(){
+  const msg = $("import-msg");
+  let arr;
+  try{ arr = JSON.parse($("import-json").value.trim() || "[]"); }
+  catch(e){ msg.textContent = "Invalid JSON: " + e.message; return; }
+  if(!Array.isArray(arr) || !arr.length){ msg.textContent = "Paste a non-empty JSON array."; return; }
+  const clean = [];
+  for(let i=0;i<arr.length;i++){
+    const q = arr[i];
+    if(!q || typeof q.question !== "string" || !Array.isArray(q.options) || q.options.length !== 4){
+      msg.textContent = "Item " + (i+1) + ": need {question, options[4], answer}.";
+      return;
+    }
+    let ans = q.answer;
+    if(typeof ans === "string") ans = "ABCD".indexOf(ans.trim().toUpperCase());
+    if(ans !== 0 && ans !== 1 && ans !== 2 && ans !== 3){
+      msg.textContent = "Item " + (i+1) + ": answer must be 0-3 or A-D.";
+      return;
+    }
+    clean.push({
+      module: "My Questions", chapter: 0, type: "custom", difficulty: "custom",
+      question: q.question, options: q.options.map(String), answer: ans,
+      explanation: typeof q.explanation === "string" ? q.explanation : ""
+    });
+  }
+  store.set(CUSTOM_KEY, clean);
+  $("import-json").value = "";
+  msg.textContent = "Imported " + clean.length + " questions. Tick \u201cMy Questions\u201d above to play them.";
+  refreshCustomUI(); buildModuleGrid(); validateStart();
+}
+function refreshCustomUI(){
+  const n = getCustom().length;
+  $("btn-clear-custom").classList.toggle("hidden", !n);
+  if(n && !$("import-msg").textContent) $("import-msg").textContent = n + " custom questions saved. Tick \u201cMy Questions\u201d above to play them.";
+}
+/* ================= WIRING ================= */
+function init(){
+  buildModuleGrid();
+  pillRow("diff-row", "difficulty");
+  pillRow("count-row", "count", v => parseInt(v, 10));
+  pillRow("time-row", "time", v => parseInt(v, 10));
+  pillRow("score-row", "scoring");
+  $("mode-solo").addEventListener("click", () => setMode("solo"));
+  $("mode-battle").addEventListener("click", () => setMode("battle"));
+  setMode("solo");
+  $("btn-start").addEventListener("click", () => { validateStart(); if(!$("btn-start").disabled) startGame(); });
+  $("btn-quit").addEventListener("click", () => { stopTimer(); show("screen-setup"); });
+  $("btn-again").addEventListener("click", () => startGame());
+  $("btn-home").addEventListener("click", () => show("screen-setup"));
+  $("btn-import").addEventListener("click", importCustom);
+  $("btn-clear-custom").addEventListener("click", () => {
+    store.set(CUSTOM_KEY, []);
+    cfg.modules = cfg.modules.filter(m => m !== "custom");
+    $("import-msg").textContent = "";
+    refreshCustomUI(); buildModuleGrid(); validateStart();
+  });
+  document.addEventListener("click", e => {
+    const t = e.target && e.target.closest ? e.target.closest("[data-report]") : null;
+    if(!t || !S) return;
+    const it = S.questions[parseInt(t.dataset.report, 10)];
+    if(!it) return;
+    reportQuestion(it.q.question, it.q.chapter);
+    t.textContent = "Reported"; t.disabled = true;
+  });
+  refreshCustomUI();
+  validateStart();
+}
+document.addEventListener("DOMContentLoaded", init);
+</script>
+<script>
+/* ================= LIVE BATTLE (Firebase Realtime Database) ================= */
+const FB_KEY = "clrs-battle-fb";
+const FB_CDN = [
+  "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js",
+  "https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"
+];
+const FB_RULES = "{\n  \"rules\": {\n    \"rooms\": {\n      \"$code\": {\n        \".read\": true,\n        \".write\": true\n      }\n    }\n  }\n}";
+const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+const LIVE_ANSWER_MS = ANSWER_TIME * 1000;
+
+let fbDb = null, fbLoading = null;
+const L = { role:null, code:null, pid:null, name:"", questions:[], idx:0,
+  streaks:{}, buzzPid:null, buzzName:"", buzzT:0, endsAt:0, phase:"idle",
+  listeners:[], tickId:null, answerTimer:null, q:null, pMeta:{}, scoreCache:{},
+  iBuzzed:false, iAnswered:false };
+
+function liveMsg(t){ var el = $("live-msg"); if(el) el.textContent = t || ""; }
+function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function getFbConfig(){ try{ return JSON.parse(localStorage.getItem(FB_KEY) || "null"); }catch(e){ return null; } }
+function refreshFbStatus(){
+  var c = getFbConfig();
+  $("fb-status").textContent = c ? "Firebase: configured" + (c.projectId ? " (" + c.projectId + ")" : "") + ". You can host and join live games on this device."
+    : "Firebase: not configured yet (needed for live battle).";
+  $("btn-fb-clear").classList.toggle("hidden", !c);
+}
+function loadScript(src){
+  return new Promise(function(res, rej){
+    if(document.querySelector('script[src="' + src + '"]')) return res();
+    var s = document.createElement("script");
+    s.src = src;
+    s.onload = function(){ res(); };
+    s.onerror = function(){ rej(new Error("failed to load " + src)); };
+    document.head.appendChild(s);
+  });
+}
+function ts(){
+  return (window.firebase && firebase.database && firebase.database.ServerValue)
+    ? firebase.database.ServerValue.TIMESTAMP : Date.now();
+}
+async function ensureFb(){
+  var cfg = getFbConfig();
+  if(!cfg || !cfg.apiKey || !cfg.databaseURL) throw new Error("no-config");
+  if(window.firebase && firebase.__mock){ fbDb = firebase.database(); return fbDb; }
+  if(!fbLoading){
+    fbLoading = (async function(){
+      for(const src of FB_CDN) await loadScript(src);
+      if(!(firebase.apps && firebase.apps.length)) firebase.initializeApp(cfg);
+      fbDb = firebase.database();
+      return fbDb;
+    })();
+  }
+  return fbLoading;
+}
+function roomRef(){ return fbDb.ref("rooms/" + L.code); }
+function lr(path){ return fbDb.ref("rooms/" + L.code + (path ? "/" + path : "")); }
+function liveOn(ref, event, cb){ ref.on(event, cb); L.listeners.push([ref, event, cb]); }
+function liveOff(){ L.listeners.forEach(function(a){ try{ a[0].off(a[1], a[2]); }catch(e){} }); L.listeners = []; }
+function liveTickStop(){ if(L.tickId){ clearInterval(L.tickId); L.tickId = null; } }
+function liveCleanup(){
+  liveOff(); liveTickStop();
+  if(L.answerTimer){ clearTimeout(L.answerTimer); L.answerTimer = null; }
+}
+function genCode(){
+  var s = "";
+  for(var i=0;i<4;i++) s += CODE_CHARS[Math.floor(Math.random()*CODE_CHARS.length)];
+  return s;
+}
+function buildLiveQuestions(){
+  var pool = allQuestions().filter(q => cfg.modules.includes(modOf(q.chapter).id));
+  if(cfg.difficulty !== "mixed") pool = pool.filter(q => q.difficulty === cfg.difficulty || q.chapter === 0);
+  pool = shuffle(pool).slice(0, Math.min(cfg.count, pool.length));
+  return pool.map(function(q){
+    var order = shuffle([0,1,2,3]);
+    return { q:q, correctPos: order.indexOf(q.answer), opts: order.map(function(i){ return q.options[i]; }) };
+  });
+}
+function ansShowHtml(opts, markCorrect, markWrong){
+  return '<div class="answers">' + opts.map(function(o,i){
+    var cls = "ans locked";
+    if(i === markCorrect) cls += " mark-correct";
+    if(i === markWrong) cls += " mark-wrong";
+    return '<div class="' + cls + '" style="background:' + BTN_COLORS[i] + '"><span class="shape">' + SHAPES[i] + "</span><span>" + esc(o) + "</span></div>";
+  }).join("") + "</div>";
+}
+function ansButtonsHtml(opts){
+  return '<div class="answers" id="live-answers">' + opts.map(function(o,i){
+    return '<button class="ans" data-i="' + i + '" style="background:' + BTN_COLORS[i] + '"><span class="shape">' + SHAPES[i] + "</span><span>" + esc(o) + "</span></button>";
+  }).join("") + "</div>";
+}
+
+/* ---------- HOST ---------- */
+async function hostLive(){
+  liveMsg("");
+  var db;
+  try{ db = await ensureFb(); }
+  catch(e){ liveMsg("Please finish the Firebase setup below first."); return; }
+  var questions = buildLiveQuestions();
+  if(!questions.length){ liveMsg("No questions match the current setup. Select at least one module."); return; }
+  var code = null;
+  for(var i=0;i<20 && !code;i++){
+    var c = genCode();
+    var snap = await db.ref("rooms/" + c + "/meta").once("value");
+    if(!snap.exists()) code = c;
+  }
+  if(!code){ liveMsg("Could not create a room, please try again."); return; }
+  Object.assign(L, { role:"host", code:code, pid:null, name:"", questions:questions, idx:0,
+    streaks:{}, phase:"lobby", q:null, scoreCache:{}, buzzPid:null, buzzName:"" });
+  liveCleanup();
+  await db.ref("rooms/" + code).set({ meta:{ state:"lobby", totalQ: questions.length, createdAt: ts() } });
+  show("screen-live");
+  renderHostLobby();
+  liveOn(lr("players"), "value", function(s){
+    L.scoreCache = s.val() || {};
+    renderHostPlayers(L.scoreCache);
+    renderScoreChips();
+  });
+}
+function renderHostLobby(){
+  $("live-body").innerHTML =
+    '<h1 class="title" style="font-size:clamp(28px,5vw,44px);">Live Battle</h1>' +
+    '<p class="subtitle">Students open this page on their phones and enter the code</p>' +
+    '<div class="card"><div class="big-code" id="room-code">' + esc(L.code) + "</div>" +
+    '<div class="q-sub" style="text-align:center;">' + L.questions.length + " questions &middot; 15s per answer &middot; time-based scoring</div>" +
+    '<h2 class="sec">Players (<span id="live-pcount">0</span>)</h2>' +
+    '<div class="live-list" id="live-players"></div>' +
+    '<div class="row-btns"><button class="btn-ghost" id="live-start">Start game</button>' +
+    '<button class="btn-ghost" id="live-invite">Copy invite link</button>' +
+    '<button class="btn-ghost" id="live-cancel">Cancel</button></div></div>';
+  $("live-start").addEventListener("click", startLive);
+  $("live-invite").addEventListener("click", function(){
+    var link = fbInviteLink();
+    if(!link){ liveMsg("Save the Firebase config first."); return; }
+    copyText(link);
+    liveMsg("Invite link copied. Students open it once on their phones, then join with the room code.");
+  });
+  $("live-cancel").addEventListener("click", cancelLive);
+}
+function renderHostPlayers(players){
+  var el = $("live-players"); if(!el) return;
+  var names = Object.values(players).map(function(p){ return p.name; });
+  el.innerHTML = names.length
+    ? names.map(function(n){ return '<span class="chip">' + esc(n) + "</span>"; }).join("")
+    : '<span class="q-sub">Waiting for players&hellip;</span>';
+  var pc = $("live-pcount"); if(pc) pc.textContent = names.length;
+}
+function renderScoreChips(){
+  var el = $("live-scores"); if(!el) return;
+  var arr = Object.values(L.scoreCache).map(function(p){ return { name:p.name, score:p.score || 0 }; })
+    .sort(function(a,b){ return b.score - a.score; });
+  el.innerHTML = arr.map(function(p){ return '<span class="live-score">' + esc(p.name) + ": " + p.score + "</span>"; }).join("");
+}
+async function startLive(){
+  liveOn(lr("buzz"), "child_added", onLiveBuzz);
+  liveOn(lr("answers"), "child_added", onLiveAnswer);
+  await pushLiveQ(0);
+}
+async function pushLiveQ(i){
+  L.idx = i;
+  var item = L.questions[i];
+  L.q = item; L.buzzPid = null; L.buzzName = ""; L.phase = "question";
+  var base = roomRef();
+  await base.child("buzz").remove();
+  await base.child("answers").remove();
+  await base.child("reveal").remove();
+  await base.child("q").set({ text: item.q.question, options: item.opts, n: i + 1, total: L.questions.length, startsAt: ts() });
+  await base.child("meta").update({ state:"question", qIndex:i, buzzer:null, buzzerName:null });
+  renderHostQ(null);
+}
+async function onLiveBuzz(snap){
+  if(L.role !== "host" || L.phase !== "question") return;
+  L.phase = "buzzed";
+  var v = snap.val() || {};
+  L.buzzPid = v.pid || snap.key; L.buzzName = v.name || "Player"; L.buzzT = Date.now();
+  L.endsAt = L.buzzT + LIVE_ANSWER_MS;
+  await lr("meta").update({ state:"buzzed", buzzer: L.buzzPid, buzzerName: L.buzzName });
+  await lr("q").update({ endsAt: L.endsAt });
+  renderHostQ(L.buzzName);
+  if(L.answerTimer) clearTimeout(L.answerTimer);
+  L.answerTimer = setTimeout(liveTimeout, LIVE_ANSWER_MS + 800);
+}
+async function onLiveAnswer(snap){
+  if(L.role !== "host" || L.phase !== "buzzed" || snap.key !== L.buzzPid) return;
+  L.phase = "reveal";
+  if(L.answerTimer){ clearTimeout(L.answerTimer); L.answerTimer = null; }
+  var pos = (snap.val() || {}).pos;
+  var correct = (pos === L.q.correctPos);
+  var pts = 0;
+  if(correct){
+    var st = (L.streaks[L.buzzPid] || 0) + 1;
+    L.streaks[L.buzzPid] = st;
+    pts = livePoints(Date.now() - L.buzzT, st);
+  } else {
+    L.streaks[L.buzzPid] = 0;
+  }
+  await liveReveal({ correct:correct, pts:pts, picked:pos, note:"" });
+}
+function livePoints(delayMs, streak){
+  var frac = Math.max(0, Math.min(1, delayMs / LIVE_ANSWER_MS));
+  var base = Math.round(500 + 500 * (1 - frac));
+  var bonus = streak >= 2 ? Math.min(100 * (streak - 1), 500) : 0;
+  return base + bonus;
+}
+async function liveTimeout(){
+  if(L.role !== "host" || L.phase !== "buzzed") return;
+  L.phase = "reveal";
+  L.streaks[L.buzzPid] = 0;
+  await liveReveal({ correct:false, pts:0, picked:-1, note:"Time's up! No answer." });
+}
+async function liveReveal(r){
+  var item = L.q;
+  if(r.pts > 0){
+    var pRef = lr("players/" + L.buzzPid + "/score");
+    var snap = await pRef.once("value");
+    await pRef.set((snap.val() || 0) + r.pts);
+  }
+  await lr("reveal").set({ correctPos: item.correctPos, picked: r.picked, byPid: L.buzzPid,
+    byName: L.buzzName, points: r.pts, correct: r.correct, note: r.note, explanation: item.q.explanation });
+  await lr("meta").update({ state:"reveal" });
+  renderHostReveal(r);
+}
+function renderHostQ(buzzName){
+  var item = L.q;
+  liveTickStop();
+  var status = buzzName ? esc(buzzName) + " buzzed! Answering&hellip;" : "Waiting for a buzz&hellip; (fastest buzz answers first)";
+  $("live-body").innerHTML =
+    '<div class="topbar"><div class="pillbox">Question ' + (L.idx + 1) + " / " + L.questions.length + '</div>' +
+    '<div class="pillbox score">HOST</div></div>' +
+    '<div class="card"><div class="q-text">' + esc(item.q.question) + "</div>" +
+    ansShowHtml(item.opts, -1, -1) +
+    '<div class="q-sub" id="live-status" style="text-align:center; font-size:16px;">' + status + "</div>" +
+    '<div class="q-sub" id="live-timer" style="text-align:center;"></div>' +
+    '<div class="live-scores" id="live-scores"></div></div>';
+  renderScoreChips();
+  if(buzzName){
+    L.tickId = setInterval(function(){
+      var left = Math.max(0, Math.ceil((L.endsAt - Date.now()) / 1000));
+      var el = $("live-timer"); if(el) el.textContent = left + "s left to answer";
+      if(left <= 0) liveTickStop();
+    }, 250);
+  }
+}
+function renderHostReveal(r){
+  var item = L.q;
+  liveTickStop();
+  var last = L.idx + 1 >= L.questions.length;
+  var line = r.note || (r.correct
+    ? "Correct! " + esc(L.buzzName) + " +" + r.pts
+    : "Wrong. " + esc(L.buzzName) + " missed it.");
+  $("live-body").innerHTML =
+    '<div class="topbar"><div class="pillbox">Question ' + (L.idx + 1) + " / " + L.questions.length + '</div>' +
+    '<div class="pillbox score">HOST</div></div>' +
+    '<div class="card"><div class="q-text">' + esc(item.q.question) + "</div>" +
+    ansShowHtml(item.opts, item.correctPos, r.picked === item.correctPos ? -1 : r.picked) +
+    '<div class="feedback ' + (r.correct ? "good" : "bad") + '">' + line + "</div>" +
+    '<div class="explain">' + esc(item.q.explanation) + "</div>" +
+    '<div class="live-scores" id="live-scores"></div>' +
+    '<div class="row-btns" style="margin-top:12px;"><button class="btn-ghost" id="live-next">' + (last ? "Show results" : "Next question") + "</button></div></div>";
+  renderScoreChips();
+  $("live-next").addEventListener("click", liveNext);
+}
+async function liveNext(){
+  if(L.idx + 1 >= L.questions.length){ await endLive(); return; }
+  await pushLiveQ(L.idx + 1);
+}
+async function endLive(){
+  L.phase = "done";
+  liveTickStop();
+  if(L.answerTimer){ clearTimeout(L.answerTimer); L.answerTimer = null; }
+  var snap = await lr("players").once("value");
+  var players = snap.val() || {};
+  var board = Object.entries(players).map(function(e){ return { name:e[1].name, score:e[1].score || 0 }; })
+    .sort(function(a,b){ return b.score - a.score; });
+  await lr("meta").update({ state:"done" });
+  renderLiveDone(board, true);
+}
+function renderLiveDone(board, isHost){
+  liveTickStop();
+  var rows = board.length ? board.map(function(p,i){
+    return '<div class="live-score">' + (i + 1) + ". " + esc(p.name) + (p.me ? " (you)" : "") + " &mdash; <b>" + p.score + "</b></div>";
+  }).join("") : '<div class="q-sub">No players.</div>';
+  $("live-body").innerHTML =
+    '<h1 class="title" style="font-size:clamp(28px,5vw,44px);">Final Scores</h1>' +
+    '<p class="subtitle">Room ' + esc(L.code) + "</p>" +
+    '<div class="card"><div class="live-scores" style="flex-direction:column; align-items:stretch;">' + rows + "</div>" +
+    '<div class="row-btns" style="margin-top:14px;">' +
+    (isHost ? '<button class="btn-ghost" id="live-close">Close room</button>'
+            : '<button class="btn-ghost" id="live-leave2">Back to setup</button>') +
+    "</div></div>";
+  if(isHost) $("live-close").addEventListener("click", closeLiveRoom);
+  else $("live-leave2").addEventListener("click", leaveLive);
+}
+async function closeLiveRoom(){
+  var code = L.code;
+  liveCleanup();
+  try{ if(code) await fbDb.ref("rooms/" + code).remove(); }catch(e){}
+  show("screen-setup");
+}
+async function cancelLive(){ await closeLiveRoom(); }
+
+/* ---------- PLAYER ---------- */
+async function joinLive(){
+  liveMsg("");
+  var code = $("join-code").value.trim().toUpperCase();
+  var name = ($("join-name").value.trim() || "Player").slice(0, 16);
+  if(!code){ liveMsg("Enter the room code shown on the host screen."); return; }
+  var db;
+  try{ db = await ensureFb(); }
+  catch(e){ liveMsg("This device needs the Firebase config too (see setup below)."); return; }
+  var meta = await db.ref("rooms/" + code + "/meta").once("value");
+  if(!meta.exists()){ liveMsg("Room not found. Check the code."); return; }
+  if((meta.val() || {}).state !== "lobby"){ liveMsg("That game already started."); return; }
+  Object.assign(L, { role:"player", code:code, name:name, phase:"lobby", q:null,
+    pMeta: meta.val() || {}, iBuzzed:false, iAnswered:false, buzzPid:null });
+  liveCleanup();
+  L.pid = db.ref("rooms/" + code + "/players").push().key;
+  await lr("players/" + L.pid).set({ name:name, score:0, joinedAt: ts() });
+  lr("players/" + L.pid).onDisconnect().remove();
+  show("screen-live");
+  renderPlayerLobby();
+  liveOn(lr("meta"), "value", function(s){ onPlayerMeta(s.val() || {}); });
+  liveOn(lr("q"), "value", function(s){ onPlayerQ(s.val()); });
+  liveOn(lr("reveal"), "value", function(s){ var v = s.val(); if(v) onPlayerReveal(v); });
+}
+function renderPlayerLobby(){
+  $("live-body").innerHTML =
+    '<h1 class="title" style="font-size:clamp(28px,5vw,44px);">Live Battle</h1>' +
+    '<p class="subtitle">Room ' + esc(L.code) + "</p>" +
+    '<div class="card"><div class="q-sub" style="text-align:center; font-size:17px;">You are in as <b>' + esc(L.name) + "</b>. Waiting for the host to start&hellip;</div>" +
+    '<div class="row-btns" style="margin-top:14px;"><button class="btn-ghost" id="live-leave">Leave</button></div></div>';
+  $("live-leave").addEventListener("click", leaveLive);
+}
+function onPlayerMeta(m){
+  L.pMeta = m;
+  if(m.state === "done"){ onLiveDone(); return; }
+  if(m.state === "lobby"){ renderPlayerLobby(); return; }
+  if(m.state === "reveal") return;
+  if(L.q){
+    if(m.state === "question") renderPlayerBuzz();
+    else if(m.state === "buzzed") renderPlayerBuzzed();
+  }
+}
+function onPlayerQ(q){
+  if(!q) return;
+  var isNew = !L.q || L.q.n !== q.n;
+  L.q = q;
+  if(isNew){ L.iBuzzed = false; L.iAnswered = false; }
+  var st = (L.pMeta || {}).state;
+  if(st === "question") renderPlayerBuzz();
+  else if(st === "buzzed") renderPlayerBuzzed();
+}
+function renderPlayerBuzz(){
+  var q = L.q;
+  liveTickStop();
+  $("live-body").innerHTML =
+    '<div class="topbar"><div class="pillbox">Question ' + q.n + " / " + q.total + '</div>' +
+    '<div class="pillbox score">' + esc(L.name) + "</div></div>" +
+    '<div class="card"><div class="q-text">' + esc(q.text) + "</div>" +
+    ansShowHtml(q.options, -1, -1) +
+    '<button class="buzz-big" id="buzz-btn"' + (L.iBuzzed ? " disabled" : "") + ">BUZZ</button>" +
+    '<div class="q-sub" style="text-align:center;" id="buzz-hint">' + (L.iBuzzed ? "Buzzed! Waiting&hellip;" : "Fastest buzz answers first") + "</div>" +
+    '<div class="row-btns"><button class="btn-ghost" id="live-leave">Leave</button></div></div>';
+  $("buzz-btn").addEventListener("click", buzzLive);
+  $("live-leave").addEventListener("click", leaveLive);
+}
+async function buzzLive(){
+  if(((L.pMeta || {}).state) !== "question" || L.iBuzzed) return;
+  L.iBuzzed = true;
+  var b = $("buzz-btn"); if(b) b.disabled = true;
+  var h = $("buzz-hint"); if(h) h.textContent = "Buzzed! Waiting\u2026";
+  await lr("buzz").push({ pid: L.pid, name: L.name, t: ts() });
+}
+function renderPlayerBuzzed(){
+  var q = L.q, m = L.pMeta;
+  liveTickStop();
+  var me = m.buzzer === L.pid;
+  var body =
+    '<div class="topbar"><div class="pillbox">Question ' + q.n + " / " + q.total + '</div>' +
+    '<div class="pillbox score">' + esc(L.name) + "</div></div>" +
+    '<div class="card"><div class="q-text">' + esc(q.text) + "</div>";
+  if(me){
+    body += '<div class="q-sub" style="text-align:center; color:#ffd75e; font-weight:800; font-size:16px;">You buzzed first! Answer now:</div>' +
+      ansButtonsHtml(q.options) +
+      '<div class="q-sub" id="live-timer" style="text-align:center;"></div>';
+  } else {
+    body += '<div class="q-sub" style="text-align:center; font-size:16px;">' + esc(m.buzzerName || "Someone") + " buzzed first and is answering&hellip;</div>";
+  }
+  body += '<div class="row-btns"><button class="btn-ghost" id="live-leave">Leave</button></div></div>';
+  $("live-body").innerHTML = body;
+  $("live-leave").addEventListener("click", leaveLive);
+  if(me && !L.iAnswered){
+    document.querySelectorAll("#live-answers .ans").forEach(function(b){
+      b.addEventListener("click", function(){ answerLive(parseInt(b.dataset.i, 10)); });
+    });
+    var endsAt = q.endsAt || (Date.now() + LIVE_ANSWER_MS);
+    L.tickId = setInterval(function(){
+      var left = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+      var el = $("live-timer"); if(el) el.textContent = left + "s left";
+      if(left <= 0) liveTickStop();
+    }, 250);
+  }
+}
+async function answerLive(pos){
+  if(L.iAnswered) return;
+  if(((L.pMeta || {}).state) !== "buzzed" || L.pMeta.buzzer !== L.pid) return;
+  L.iAnswered = true;
+  document.querySelectorAll("#live-answers .ans").forEach(function(b){ b.disabled = true; });
+  await lr("answers/" + L.pid).set({ pos: pos, t: ts() });
+}
+function onPlayerReveal(rv){
+  liveTickStop();
+  var q = L.q || { n:"?", total:"?" };
+  var me = rv.byPid === L.pid;
+  var line;
+  if(rv.picked === -1) line = "Time's up! No answer.";
+  else if(rv.correct) line = me ? "Correct! +" + rv.points : esc(rv.byName) + " got it right (+" + rv.points + ")";
+  else line = me ? "Wrong." : esc(rv.byName) + " missed it.";
+  $("live-body").innerHTML =
+    '<div class="topbar"><div class="pillbox">Question ' + q.n + " / " + q.total + '</div>' +
+    '<div class="pillbox score">' + esc(L.name) + "</div></div>" +
+    '<div class="card"><div class="q-text">' + esc(q ? q.text : "") + "</div>" +
+    (q.options ? ansShowHtml(q.options, rv.correctPos, (me && rv.picked !== rv.correctPos) ? rv.picked : -1) : "") +
+    '<div class="feedback ' + (rv.correct ? "good" : "bad") + '">' + line + "</div>" +
+    (rv.explanation ? '<div class="explain">' + esc(rv.explanation) + "</div>" : "") +
+    '<div class="q-sub" style="text-align:center;">Waiting for host&hellip;</div>' +
+    '<div class="row-btns"><button class="btn-ghost" id="live-leave">Leave</button></div></div>';
+  $("live-leave").addEventListener("click", leaveLive);
+}
+async function onLiveDone(){
+  liveTickStop();
+  var snap = await lr("players").once("value");
+  var players = snap.val() || {};
+  var board = Object.entries(players).map(function(e){
+    return { name:e[1].name, score:e[1].score || 0, me: e[0] === L.pid };
+  }).sort(function(a,b){ return b.score - a.score; });
+  renderLiveDone(board, false);
+}
+async function leaveLive(){
+  liveCleanup();
+  try{ if(L.role === "player" && L.pid) await lr("players/" + L.pid).remove(); }catch(e){}
+  L.role = null;
+  show("screen-setup");
+}
+
+/* ---------- config UI ---------- */
+function fbInviteLink(){
+  var cfg = getFbConfig(); if(!cfg) return null;
+  return location.href.split("#")[0] + "#fb=" + btoa(JSON.stringify(cfg));
+}
+function copyText(t){
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t).catch(function(){}); return; }
+  var ta = document.createElement("textarea");
+  ta.value = t; document.body.appendChild(ta); ta.select();
+  try{ document.execCommand("copy"); }catch(e){}
+  document.body.removeChild(ta);
+}
+function saveFbConfig(){
+  try{
+    var cfg = JSON.parse($("fb-config").value);
+    if(!cfg.apiKey || !cfg.databaseURL) throw new Error("bad");
+    localStorage.setItem(FB_KEY, JSON.stringify(cfg));
+    fbDb = null; fbLoading = null;
+    $("fb-msg").textContent = "Saved. You can now host or join live games on this device.";
+  }catch(e){
+    $("fb-msg").textContent = "Invalid config. Paste the full firebaseConfig JSON (needs apiKey and databaseURL).";
+  }
+  refreshFbStatus();
+}
+document.addEventListener("DOMContentLoaded", function(){
+  if(location.hash.indexOf("#fb=") === 0){
+    try{
+      var icfg = JSON.parse(atob(location.hash.slice(4)));
+      if(icfg.apiKey && icfg.databaseURL){
+        localStorage.setItem(FB_KEY, JSON.stringify(icfg));
+        fbDb = null; fbLoading = null;
+      }
+    }catch(e){}
+    try{ history.replaceState(null, "", location.pathname + location.search); }catch(e2){}
+  }
+  $("fb-rules").value = FB_RULES;
+  var saved = getFbConfig();
+  if(saved) $("fb-config").value = JSON.stringify(saved);
+  refreshFbStatus();
+  $("btn-fb-save").addEventListener("click", saveFbConfig);
+  $("btn-fb-clear").addEventListener("click", function(){
+    localStorage.removeItem(FB_KEY);
+    fbDb = null; fbLoading = null;
+    $("fb-config").value = "";
+    $("fb-msg").textContent = "Removed.";
+    refreshFbStatus();
+  });
+  $("btn-host").addEventListener("click", hostLive);
+  $("btn-join").addEventListener("click", joinLive);
+});
+
+</script>
+</body>
+</html>
