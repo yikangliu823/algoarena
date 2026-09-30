@@ -49,9 +49,9 @@ Paste a JSON array into the custom-bank field on the setup screen. Each item nee
 
 ## Project info
 
-**Author:** Yikang (Richard) Liu, M.S. Candidate in Computer Science, Khoury College of Computer Sciences, Northeastern University
-**Version:** 1.0
-**Created:** September 26, 2026 · San Francisco, California, USA
+- **Author:** Yikang (Richard) Liu, M.S. Candidate in Computer Science, Khoury College of Computer Sciences, Northeastern University
+- **Version:** 1.0
+- **Created:** September 26, 2026 · San Francisco, California, USA
 
 ## License
 
