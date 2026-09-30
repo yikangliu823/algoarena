@@ -47,6 +47,6 @@ Paste a JSON array into the custom-bank field on the setup screen. Each item nee
 
 ## License
 
-This project is licensed under the MIT License — see [LICENSE](LICENSE) for details.
+This project is licensed under the MIT License — see [LICENSE](LICENSE.md) for details.
 
 **Copyright © 2026 Yikang (Richard) Liu.**
