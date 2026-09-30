@@ -1,6 +1,6 @@
 # AlgoArena
 
-AlgoArena — an open-sourced Kahoot-style classroom quiz game for CS 5800 Algorithms MERGED, based on Dr. Maryam Farahmand's course materials and recommended CLRS textbook.
+AlgoArena — an open-sourced Kahoot-style classroom quiz game for CS 5800 Algorithms MERGED, based on Professor Maryam's course materials and recommended CLRS textbook.
 
 ## Features
 
@@ -19,6 +19,12 @@ AlgoArena — an open-sourced Kahoot-style classroom quiz game for CS 5800 Algor
 Open `index.html` in any modern browser and play. No installation, no build, no server.
 
 Live multiplayer needs a free Firebase project (Spark plan, no credit card required) — the step-by-step setup is in the game's setup panel. The host then shares an invite link or reads out the room code; students join from their phones.
+
+## Classroom invite QR
+
+Students scan this code in class — it opens the game and auto-fills the Firebase config, then they just type in the room code shown on the big screen.
+
+<img src="algoarena-invite-qr-neu.png" width="420" alt="AlgoArena classroom invite QR code">
 
 ## Custom question banks
 
@@ -43,7 +49,7 @@ Paste a JSON array into the custom-bank field on the setup screen. Each item nee
 
 **Author:** Yikang (Richard) Liu, M.S. Candidate in Computer Science, Khoury College of Computer Sciences, Northeastern University
 **Version:** 1.0
-**Created:** September 30, 2026 · San Mateo, California, USA
+**Created:** September 26, 2026 · San Francisco, California, USA
 
 ## License
 
