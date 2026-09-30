@@ -1,6 +1,6 @@
 # AlgoArena
 
-AlgoArena — an open-sourced Kahoot-style classroom quiz game for CS 5800 Algorithms MERGED, based on Professor Maryam's course materials and recommended CLRS textbook.
+AlgoArena — an open-sourced Kahoot-style classroom quiz game for CS 5800 Algorithms MERGED, based on Dr. Maryam Farahmand's course materials and recommended CLRS textbook.
 
 **Live demo:** https://yikangliu823.github.io/algoarena/
 
