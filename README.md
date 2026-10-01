@@ -12,7 +12,7 @@ AlgoArena — an open-sourced Kahoot-style classroom quiz game for CS 5800 Algor
 - **Three play modes**
   - *Solo* — speed-based scoring (500–1000 per question) with streak bonuses
   - *Local versus* — two players on one screen; buzz in, 15 seconds to answer, wrong answers let the opponent steal at half points
-  - *Live multiplayer* — powered by Firebase Realtime Database: the host creates a 4-character room code on the big screen, students join from their phones, fastest buzz wins (server-timestamped), answers are revealed only at the reveal stage to prevent cheating
+  - *Live multiplayer* — powered by Firebase Realtime Database: the host creates a 4-character room code on the big screen, students join from their phones, the first buzz the host receives wins, answers are revealed only at the reveal stage to prevent cheating
 - **Missed-question retry**, **streak scoring**, **custom question banks** (paste JSON, saved in the browser), and **in-game question reporting**
 - **Single self-contained HTML file** — vanilla JavaScript, inline CSS, no build step, no dependencies beyond the Firebase CDN (live mode only)
 
@@ -33,19 +33,17 @@ Students scan this code in class — it opens the game and auto-fills the Fireba
 Paste a JSON array into the custom-bank field on the setup screen. Each item needs:
 
 ```json
-{
-  "module": "Module 1 · Foundations",
-  "chapter": "Chapter 2",
-  "difficulty": "medium",
-  "qtype": "complexity",
-  "question": "The running time of MERGE-SORT on n elements is…",
-  "choices": ["Θ(n)", "Θ(n log n)", "Θ(n^2)", "Θ(n^2 log n)"],
-  "answer": 1,
-  "explanation": "…"
-}
+[
+  {
+    "question": "The running time of MERGE-SORT on n elements is…",
+    "options": ["Θ(n)", "Θ(n log n)", "Θ(n^2)", "Θ(n^2 log n)"],
+    "answer": 1,
+    "explanation": "…"
+  }
+]
 ```
 
-`answer` is the 0-based index of the correct choice.
+`options` must contain exactly four choices. `answer` is the 0-based index of the correct option, or a letter from `"A"` to `"D"`. `explanation` is optional.
 
 ## Project info
 - **Directed by:** [Dr. Maryam Farahmand](https://siliconvalley.northeastern.edu/faculty/maryam-farahmand-asil/)
