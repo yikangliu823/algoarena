@@ -243,9 +243,9 @@ textarea#import-json:focus{border-color:var(--purple);}
      ========================================================================== */
 
   /* Large room code and player chips (.me marks the current player). */
-  .big-code{font-size:clamp(48px,10vw,84px); font-weight:900; letter-spacing:14px; text-align:center; color:#fff; background:rgba(255,255,255,.12); border-radius:18px; padding:14px 8px 14px 22px; margin:14px 0;}
+  .big-code{font-size:clamp(48px,10vw,84px); font-weight:900; letter-spacing:14px; text-align:center; color:var(--purple); background:#efe8fb; border-radius:18px; padding:14px 8px 14px 22px; margin:14px 0;}
   .live-list{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0;}
-  .chip{background:rgba(255,255,255,.14); color:#fff; border-radius:999px; padding:6px 14px; font-weight:700; font-size:15px;}
+  .chip{background:#efe8fb; color:var(--purple); border-radius:999px; padding:6px 14px; font-weight:700; font-size:15px;}
   .chip.me{background:#d89e00; color:#2a1500;}
   /* Large round buzz button for phones. */
   .buzz-big{display:block; width:min(320px,80vw); height:min(320px,80vw); margin:24px auto; border-radius:50%; border:none; background:#e21b3c; color:#fff; font-size:34px; font-weight:900; letter-spacing:2px; cursor:pointer; box-shadow:0 10px 0 #a3122b, 0 14px 28px rgba(0,0,0,.35);}
@@ -253,7 +253,7 @@ textarea#import-json:focus{border-color:var(--purple);}
   .buzz-big:disabled{background:#8a8f98; box-shadow:none; cursor:default; transform:none;}
   /* Live score chips. */
   .live-scores{display:flex; flex-wrap:wrap; gap:8px; margin:10px 0;}
-  .live-score{background:rgba(255,255,255,.1); border-radius:10px; padding:6px 12px; color:#fff; font-weight:700; font-size:14px;}
+  .live-score{background:#efe8fb; border-radius:10px; padding:6px 12px; color:var(--purple); font-weight:700; font-size:14px;}
   /* Firebase setup panel. */
   details{margin-top:14px; background:rgba(255,255,255,.07); border-radius:12px; padding:10px 14px;}
   details summary{cursor:pointer; font-weight:800; color:#ffd75e;}
@@ -1894,7 +1894,7 @@ function renderPlayerBuzzed(){
     '<div class="pillbox score">' + esc(L.name) + "</div></div>" +
     '<div class="card"><div class="q-text">' + esc(q.text) + "</div>";
   if(me){
-    body += '<div class="q-sub" style="text-align:center; color:#ffd75e; font-weight:800; font-size:16px;">You buzzed first! Answer now:</div>' +
+    body += '<div class="q-sub" style="text-align:center; color:#a3122b; font-weight:800; font-size:16px;">You buzzed first! Answer now:</div>' +
       ansButtonsHtml(q.options) +
       '<div class="q-sub" id="live-timer" style="text-align:center;"></div>';
   } else {
